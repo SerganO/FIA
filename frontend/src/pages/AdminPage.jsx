@@ -1,12 +1,75 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RoleGuard } from '../components/Auth/RoleGuard'
-import { getModelVersions, triggerRetrain, activateModel } from '../lib/apiClient'
+import { getModelVersions, triggerRetrain, activateModel, importAccidents, importBikeLanes, importCrossings } from '../lib/apiClient'
 import toast from 'react-hot-toast'
 
 const BASE_URL = import.meta.env.VITE_FASTAPI_URL || 'http://localhost:8000'
 
-export function AdminPage() {
+function ImportRow({ label, accept, onImport, onRefresh }) {
+  const { t } = useTranslation()
+  const [busy,   setBusy]   = useState(false)
+  const [result, setResult] = useState(null)
+  const inputRef = useRef(null)
+
+  async function handleFile(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setBusy(true)
+    setResult(null)
+    try {
+      const res = await onImport(file)
+      setResult(res)
+      toast.success(`${t('admin.import.done')}: +${res.inserted}`)
+      onRefresh?.()
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || err.message)
+    } finally {
+      setBusy(false)
+      e.target.value = ''
+    }
+  }
+
+  return (
+    <div className="import-row">
+      <span className="import-label">{label}</span>
+      <button
+        className="btn btn-ghost"
+        style={{ fontSize: '.8rem' }}
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+      >
+        {busy ? `⏳ ${t('admin.import.uploading')}` : `⬆ ${t('admin.import.upload')}`}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        style={{ display: 'none' }}
+        onChange={handleFile}
+      />
+      {result && (
+        <span className="import-result">
+          {result.bike_lanes != null ? (
+            <>
+              ✅ {t('layer.bikeLanes')}: {result.bike_lanes.inserted}&nbsp;
+              · {t('admin.import.bikeParking')}: {result.bike_parking.inserted}&nbsp;
+              · {t('admin.import.bikeRental')}: {result.bike_rental.inserted}
+              {result.skipped > 0 && ` (${result.skipped} ${t('admin.import.skipped')})`}
+            </>
+          ) : (
+            <>
+              ✅ {result.inserted} {t('admin.import.inserted')}
+              {result.skipped > 0 && `, ${result.skipped} ${t('admin.import.skipped')}`}
+            </>
+          )}
+        </span>
+      )}
+    </div>
+  )
+}
+
+export function AdminPage({ onImportAccidents, onImportBikeLanes }) {
   const { t } = useTranslation()
   const [versions,   setVersions]   = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -129,6 +192,28 @@ export function AdminPage() {
             </table>
           </div>
         )}
+
+        <div className="admin-section">
+          <h3 className="admin-section-title">{t('admin.import.title')}</h3>
+          <p className="admin-section-hint">{t('admin.import.hint')}</p>
+          <ImportRow
+            label={t('admin.import.accidents')}
+            accept=".csv"
+            onImport={importAccidents}
+            onRefresh={onImportAccidents}
+          />
+          <ImportRow
+            label={t('admin.import.bikeLanes')}
+            accept=".geojson,.json"
+            onImport={importBikeLanes}
+            onRefresh={onImportBikeLanes}
+          />
+          <ImportRow
+            label={t('admin.import.crossings')}
+            accept=".geojson,.json"
+            onImport={importCrossings}
+          />
+        </div>
       </div>
     </RoleGuard>
   )

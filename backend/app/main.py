@@ -2,7 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import predict, retrain, export
+from app.routers import predict, retrain, export, import_data
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -46,7 +46,8 @@ app.add_middleware(
 
 app.include_router(predict.router, prefix="/api")
 app.include_router(retrain.router, prefix="/api")
-app.include_router(export.router,  prefix="/api")
+app.include_router(export.router,       prefix="/api")
+app.include_router(import_data.router,  prefix="/api")
 
 
 @app.get("/health")

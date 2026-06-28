@@ -13,7 +13,10 @@
   },
   "layer": {
     "accidents":     "Accidents",
+    "bikeInfra":     "Bicycle Infrastructure",
     "bikeLanes":     "Bike Lanes",
+    "bikeParking":   "Bike Parking",
+    "bikeRental":    "Bike Rental",
     "proposals":     "Proposals",
     "hazardReports": "Hazards",
     "traffic":       "Live Traffic"
@@ -80,7 +83,13 @@
     "surface": "Surface",
     "safetyScore": "Safety score",
     "status": "Status",
-    "pending": "Pending"
+    "pending": "Pending",
+    "bikeParking": "Bike Parking",
+    "bikeRental": "Bike Rental",
+    "capacity": "Capacity",
+    "covered": "Covered",
+    "network": "Network",
+    "operator": "Operator"
   },
   "lang": {
     "switch": "UA"
@@ -147,6 +156,20 @@
     "activated":      "Activated",
     "loadError":      "Failed to load model versions",
     "denied":         "Admin access only",
-    "noModels":       "No models found"
+    "noModels":       "No models found",
+    "import": {
+      "title":     "Import Data",
+      "hint":      "Upload files to append data. Existing records are not removed.",
+      "accidents": "Accidents (CSV, semicolon-delimited)",
+      "bikeLanes": "Bike Lanes (GeoJSON / Overpass)",
+      "upload":      "Upload",
+      "uploading":   "Uploading…",
+      "done":        "Import complete",
+      "inserted":    "inserted",
+      "skipped":     "skipped",
+      "bikeParking": "Parking",
+      "bikeRental":  "Rental",
+      "crossings":   "Crossings (GeoJSON)"
+    }
   }
 }

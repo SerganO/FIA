@@ -21,6 +21,10 @@ FEATURE_NAMES = [
     "num_vertices",
     "bearing_variance",
     "intersections_count",
+    # Danger crossings (from danger_crossings table via get_danger_crossing_features RPC)
+    "crossings_within_100m",
+    "uncontrolled_crossings_within_100m",
+    "nearest_crossing_m",
 ]
 
 
@@ -71,6 +75,29 @@ def _bike_lane_features(geom_dict: dict) -> dict:
     return defaults
 
 
+def _crossing_features(geom_dict: dict) -> dict:
+    """Query PostGIS for danger-crossing proximity metrics. Falls back to defaults."""
+    defaults = {
+        "crossings_within_100m":              0,
+        "uncontrolled_crossings_within_100m": 0,
+        "nearest_crossing_m":                 9999.0,
+    }
+    try:
+        from app.db.supabase_client import get_supabase
+        supabase = get_supabase()
+        rows = supabase.rpc("get_danger_crossing_features", {"p_geom": geom_dict}).execute().data
+        if rows and rows[0]:
+            r = rows[0]
+            return {
+                "crossings_within_100m":              int(r.get("crossings_within_100m", 0) or 0),
+                "uncontrolled_crossings_within_100m": int(r.get("uncontrolled_crossings_within_100m", 0) or 0),
+                "nearest_crossing_m":                 float(r.get("nearest_crossing_m", 9999) or 9999),
+            }
+    except Exception as e:
+        logger.warning(f"Crossing features RPC failed, using defaults: {e}")
+    return defaults
+
+
 def extract_features(geometry: dict) -> dict:
     """
     Extract the full ML feature vector for a GeoJSON LineString.
@@ -97,19 +124,25 @@ def extract_features(geometry: dict) -> dict:
     # ── Bike lane proximity (PostGIS RPC) ─────────────────────────────────────
     bl = _bike_lane_features(geometry)
 
+    # ── Danger crossing proximity (PostGIS RPC) ───────────────────────────────
+    cr = _crossing_features(geometry)
+
     return {
-        "accidents_within_50m":      len(acc_50m),
-        "accidents_within_100m":     len(acc_100m),
-        "accidents_within_500m":     len(acc_500m),
-        "fatal_accidents_100m":      fatal_100m,
-        "serious_accidents_100m":    serious_100m,
-        "weighted_severity_score":   w_sev,
-        "accident_density_per_km":   density,
-        "nearest_bike_lane_m":       bl["nearest_bike_lane_m"],
-        "existing_lane_overlap_pct": bl["existing_lane_overlap_pct"],
-        "bike_lane_density_500m":    bl["bike_lane_density_500m"],
-        "length_m":                  length_m,
-        "num_vertices":              num_vertices,
-        "bearing_variance":          bearing_variance,
-        "intersections_count":       bl["intersections_count"],
+        "accidents_within_50m":               len(acc_50m),
+        "accidents_within_100m":              len(acc_100m),
+        "accidents_within_500m":              len(acc_500m),
+        "fatal_accidents_100m":               fatal_100m,
+        "serious_accidents_100m":             serious_100m,
+        "weighted_severity_score":            w_sev,
+        "accident_density_per_km":            density,
+        "nearest_bike_lane_m":                bl["nearest_bike_lane_m"],
+        "existing_lane_overlap_pct":          bl["existing_lane_overlap_pct"],
+        "bike_lane_density_500m":             bl["bike_lane_density_500m"],
+        "length_m":                           length_m,
+        "num_vertices":                       num_vertices,
+        "bearing_variance":                   bearing_variance,
+        "intersections_count":                bl["intersections_count"],
+        "crossings_within_100m":              cr["crossings_within_100m"],
+        "uncontrolled_crossings_within_100m": cr["uncontrolled_crossings_within_100m"],
+        "nearest_crossing_m":                 cr["nearest_crossing_m"],
     }

@@ -13,7 +13,10 @@
   },
   "layer": {
     "accidents":     "ДТП",
+    "bikeInfra":     "Велоінфраструктура",
     "bikeLanes":     "Велодоріжки",
+    "bikeParking":   "Велопаркінги",
+    "bikeRental":    "Прокат велосипедів",
     "proposals":     "Пропозиції",
     "hazardReports": "Небезпеки",
     "traffic":       "Трафік (Live)"
@@ -80,7 +83,13 @@
     "surface": "Покриття",
     "safetyScore": "Оцінка безпеки",
     "status": "Статус",
-    "pending": "Очікується"
+    "pending": "Очікується",
+    "bikeParking": "Велопаркінг",
+    "bikeRental": "Прокат велосипедів",
+    "capacity": "Місць",
+    "covered": "Накритий",
+    "network": "Мережа",
+    "operator": "Оператор"
   },
   "lang": {
     "switch": "EN"
@@ -147,6 +156,20 @@
     "activated":      "Активовано",
     "loadError":      "Помилка завантаження версій",
     "denied":         "Доступ лише для адміністраторів",
-    "noModels":       "Моделей не знайдено"
+    "noModels":       "Моделей не знайдено",
+    "import": {
+      "title":     "Імпорт даних",
+      "hint":      "Завантажте файли для додавання даних. Наявні записи не видаляються.",
+      "accidents": "ДТП (CSV, крапка з комою)",
+      "bikeLanes": "Велодоріжки (GeoJSON / Overpass)",
+      "upload":      "Завантажити",
+      "uploading":   "Завантаження…",
+      "done":        "Імпорт завершено",
+      "inserted":    "додано",
+      "skipped":     "пропущено",
+      "bikeParking": "Паркінги",
+      "bikeRental":  "Прокат",
+      "crossings":   "Перехрестя (GeoJSON)"
+    }
   }
 }

@@ -73,6 +73,44 @@ function proposalOnEach(feature, layer) {
   `)
 }
 
+// ── Bike parking icon & popup ─────────────────────────────────────────────────
+const parkingIcon = L.divIcon({
+  className: '',
+  html: '<div style="background:#3b82f6;color:#fff;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)">P</div>',
+  iconSize:   [18, 18],
+  iconAnchor: [9, 9],
+  popupAnchor:[0, -10],
+})
+
+function parkingOnEach(feature, layer) {
+  const p = feature.properties
+  layer.bindPopup(`
+    <strong>${p.name ?? t('map.bikeParking')}</strong><br/>
+    ${p.capacity    ? `${t('map.capacity')}: ${p.capacity}<br/>` : ''}
+    ${p.parking_type? `${t('map.type')}: ${p.parking_type}<br/>` : ''}
+    ${p.covered != null ? `${t('map.covered')}: ${p.covered ? '✓' : '✗'}` : ''}
+  `)
+}
+
+// ── Bike rental icon & popup ──────────────────────────────────────────────────
+const rentalIcon = L.divIcon({
+  className: '',
+  html: '<div style="background:#a855f7;color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)">R</div>',
+  iconSize:   [20, 20],
+  iconAnchor: [10, 10],
+  popupAnchor:[0, -11],
+})
+
+function rentalOnEach(feature, layer) {
+  const p = feature.properties
+  layer.bindPopup(`
+    <strong>${p.name ?? t('map.bikeRental')}</strong><br/>
+    ${p.network  ? `${t('map.network')}: ${p.network}<br/>` : ''}
+    ${p.operator ? `${t('map.operator')}: ${p.operator}<br/>` : ''}
+    ${p.capacity ? `${t('map.capacity')}: ${p.capacity}` : ''}
+  `)
+}
+
 // ── Hazard report icon & popup ────────────────────────────────────────────────
 const hazardIcon = L.divIcon({
   className: '',
@@ -165,6 +203,8 @@ function GeomanController({ onProposalDrawn, enabled }) {
 export function MapView({
   accidents,
   bikeLanes,
+  bikeParking,
+  bikeRental,
   proposals,
   hazardReports,
   layers,
@@ -175,6 +215,8 @@ export function MapView({
 }) {
   const accRef      = useRef()
   const blRef       = useRef()
+  const parkingRef  = useRef()
+  const rentalRef   = useRef()
   const proposalRef = useRef()
   const hazardRef   = useRef()
 
@@ -192,6 +234,20 @@ export function MapView({
       if (bikeLanes) blRef.current.addData(bikeLanes)
     }
   }, [bikeLanes])
+
+  useEffect(() => {
+    if (parkingRef.current) {
+      parkingRef.current.clearLayers()
+      if (bikeParking) parkingRef.current.addData(bikeParking)
+    }
+  }, [bikeParking])
+
+  useEffect(() => {
+    if (rentalRef.current) {
+      rentalRef.current.clearLayers()
+      if (bikeRental) rentalRef.current.addData(bikeRental)
+    }
+  }, [bikeRental])
 
   useEffect(() => {
     if (proposalRef.current) {
@@ -243,6 +299,28 @@ export function MapView({
           style={bikeLaneStyle}
           onEachFeature={bikeLaneOnEach}
           ref={blRef}
+        />
+      )}
+
+      {/* Bike parking */}
+      {layers.bikeParking && bikeParking && (
+        <GeoJSON
+          key={`bp-${JSON.stringify(bikeParking).length}`}
+          data={bikeParking}
+          pointToLayer={(f, ll) => L.marker(ll, { icon: parkingIcon })}
+          onEachFeature={parkingOnEach}
+          ref={parkingRef}
+        />
+      )}
+
+      {/* Bike rental */}
+      {layers.bikeRental && bikeRental && (
+        <GeoJSON
+          key={`br-${JSON.stringify(bikeRental).length}`}
+          data={bikeRental}
+          pointToLayer={(f, ll) => L.marker(ll, { icon: rentalIcon })}
+          onEachFeature={rentalOnEach}
+          ref={rentalRef}
         />
       )}
 

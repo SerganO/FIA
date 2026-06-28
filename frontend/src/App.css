@@ -198,6 +198,29 @@ body {
   transform: scaleY(-1);
 }
 
+.infra-dropdown {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 6px 4px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.infra-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+  font-size: .82rem;
+  user-select: none;
+}
+.infra-checkbox-row:hover { background: var(--color-bg); }
+.infra-checkbox-row input[type="checkbox"] { cursor: pointer; accent-color: var(--color-primary); }
+
 
 /* ─── Safety score badge ─────────────────────────────────────────────────── */
 .safety-badge {
@@ -464,6 +487,41 @@ body {
   font-size: .9rem;
   color: var(--color-muted);
   padding: 40px;
+}
+
+/* ─── Admin import section ───────────────────────────────────────────────── */
+.admin-section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+.admin-section-title {
+  font-size: .9rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--color-text);
+}
+.admin-section-hint {
+  font-size: .78rem;
+  color: var(--color-muted);
+  margin-bottom: 14px;
+}
+.import-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.import-row:last-child { border-bottom: none; }
+.import-label {
+  flex: 1;
+  font-size: .85rem;
+  font-weight: 500;
+}
+.import-result {
+  font-size: .78rem;
+  color: var(--color-success);
 }
 
 /* ─── Toast (react-hot-toast plays nicely without extra CSS) ─────────────── */

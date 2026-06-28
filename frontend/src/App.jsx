@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { MapView }          from './components/Map/MapView'
@@ -19,42 +19,124 @@ const ROLE_COLORS = {
   admin:         'role-admin',
 }
 
-function LayerControls({ layers, onToggle, filterOpen, onFilterToggle, filterPanelProps }) {
+function BikeInfraControl({ layers, onToggle }) {
   const { t } = useTranslation()
-  const items = [
-    { key: 'accidents',     label: t('layer.accidents'),     dot: '#ef4444', filterable: true },
-    { key: 'bikeLanes',     label: t('layer.bikeLanes'),     dot: '#22c55e' },
-    { key: 'proposals',     label: t('layer.proposals'),     dot: '#3b82f6' },
-    { key: 'hazardReports', label: t('layer.hazardReports'), dot: '#f97316' },
-    { key: 'traffic',       label: t('layer.traffic'),       dot: '#94a3b8' },
-  ]
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  const anyActive = layers.bikeLanes || layers.bikeParking || layers.bikeRental
+
+  useEffect(() => {
+    if (!open) return
+    function handleOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [open])
+
+  function toggleAll() {
+    const next = !anyActive
+    ;['bikeLanes', 'bikeParking', 'bikeRental'].forEach(key => {
+      if (!!layers[key] !== next) onToggle(key)
+    })
+  }
+
   return (
-    <div className="map-controls">
-      {items.map(({ key, label, dot, filterable }) => (
-        <div key={key}>
-          <div className="layer-toggle-row">
-            <button
-              className={`layer-toggle${layers[key] ? ' active' : ''}${filterable && layers[key] ? ' split-left' : ''}`}
-              onClick={() => onToggle(key)}
-            >
+    <div ref={ref}>
+      <div className="layer-toggle-row">
+        <button
+          className={`layer-toggle split-left${anyActive ? ' active' : ''}`}
+          onClick={toggleAll}
+        >
+          <span className="layer-dot" style={{ background: '#22c55e' }} />
+          {t('layer.bikeInfra')}
+        </button>
+        <button
+          className={`layer-filter-chevron${open ? ' open' : ''}`}
+          onClick={() => setOpen(p => !p)}
+        >
+          ▾
+        </button>
+      </div>
+      {open && (
+        <div className="infra-dropdown">
+          {[
+            { key: 'bikeLanes',   label: t('layer.bikeLanes'),   dot: '#22c55e' },
+            { key: 'bikeParking', label: t('layer.bikeParking'), dot: '#3b82f6' },
+            { key: 'bikeRental',  label: t('layer.bikeRental'),  dot: '#a855f7' },
+          ].map(({ key, label, dot }) => (
+            <label key={key} className="infra-checkbox-row">
+              <input
+                type="checkbox"
+                checked={!!layers[key]}
+                onChange={() => onToggle(key)}
+              />
               <span className="layer-dot" style={{ background: dot }} />
               {label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function LayerControls({ layers, onToggle, filterOpen, onFilterToggle, filterPanelProps }) {
+  const { t } = useTranslation()
+
+  function renderSimpleItem({ key, label, dot }) {
+    return (
+      <div key={key}>
+        <div className="layer-toggle-row">
+          <button
+            className={`layer-toggle${layers[key] ? ' active' : ''}`}
+            onClick={() => onToggle(key)}
+          >
+            <span className="layer-dot" style={{ background: dot }} />
+            {label}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="map-controls">
+      {/* Accidents with filter chevron */}
+      <div>
+        <div className="layer-toggle-row">
+          <button
+            className={`layer-toggle${layers.accidents ? ' active' : ''}${layers.accidents ? ' split-left' : ''}`}
+            onClick={() => onToggle('accidents')}
+          >
+            <span className="layer-dot" style={{ background: '#ef4444' }} />
+            {t('layer.accidents')}
+          </button>
+          {layers.accidents && (
+            <button
+              className={`layer-filter-chevron${filterOpen ? ' open' : ''}`}
+              onClick={onFilterToggle}
+              title={t('filter.tooltip')}
+            >
+              ▾
             </button>
-            {filterable && layers[key] && (
-              <button
-                className={`layer-filter-chevron${filterOpen ? ' open' : ''}`}
-                onClick={onFilterToggle}
-                title={t('filter.tooltip')}
-              >
-                ▾
-              </button>
-            )}
-          </div>
-          {filterable && layers[key] && filterOpen && (
-            <AccidentFilterPanel {...filterPanelProps} />
           )}
         </div>
-      ))}
+        {layers.accidents && filterOpen && (
+          <AccidentFilterPanel {...filterPanelProps} />
+        )}
+      </div>
+
+      {/* Bicycle infrastructure group */}
+      <BikeInfraControl layers={layers} onToggle={onToggle} />
+
+      {/* Remaining single-toggle layers */}
+      {[
+        { key: 'proposals',     label: t('layer.proposals'),     dot: '#3b82f6' },
+        { key: 'hazardReports', label: t('layer.hazardReports'), dot: '#f97316' },
+        { key: 'traffic',       label: t('layer.traffic'),       dot: '#94a3b8' },
+      ].map(renderSimpleItem)}
     </div>
   )
 }
@@ -63,7 +145,7 @@ function LayerControls({ layers, onToggle, filterOpen, onFilterToggle, filterPan
 // opacity = 0.2 + 0.8 * t^decayRate   (t=0 oldest, t=1 newest in range)
 // decayRate=1 → linear   decayRate>1 → sharp drop-off   decayRate<1 → gradual
 
-const toDateStr = ms => new Date(ms).toISOString().slice(0, 10)
+const toDateStr = ms => (ms != null && !isNaN(ms)) ? new Date(ms).toISOString().slice(0, 10) : ''
 const toMs      = str => new Date(str).getTime()
 
 function AccidentFilterPanel({ dataDateRange, dateRange, onDateRange, decayRate, onDecayRate }) {
@@ -84,7 +166,7 @@ function AccidentFilterPanel({ dataDateRange, dateRange, onDateRange, decayRate,
             value={toDateStr(selMin)}
             min={toDateStr(dataMin)}
             max={toDateStr(selMax)}
-            onChange={e => onDateRange([toMs(e.target.value), selMax])}
+            onChange={e => onDateRange([e.target.value ? toMs(e.target.value) : dataMin, selMax])}
           />
           <span className="afp-sep">–</span>
           <input
@@ -92,7 +174,7 @@ function AccidentFilterPanel({ dataDateRange, dateRange, onDateRange, decayRate,
             value={toDateStr(selMax)}
             min={toDateStr(selMin)}
             max={toDateStr(dataMax)}
-            onChange={e => onDateRange([selMin, toMs(e.target.value)])}
+            onChange={e => onDateRange([selMin, e.target.value ? toMs(e.target.value) : dataMax])}
           />
         </div>
       </div>
@@ -226,7 +308,7 @@ function ProposalModal({ geometry, onSave, onClose }) {
 export default function App() {
   const { t, i18n } = useTranslation()
   const auth = useAuth()
-  const { accidents, bikeLanes, proposals, hazardReports, loading, refreshProposals, refreshHazardReports } = useMapData()
+  const { accidents, bikeLanes, bikeParking, bikeRental, proposals, hazardReports, loading, refreshAccidents, refreshBikeLanes, refreshBikeParking, refreshBikeRental, refreshProposals, refreshHazardReports } = useMapData()
 
   const [view,           setView]          = useState('map')   // 'map' | 'proposals' | 'admin'
   const [showLogin,      setShowLogin]     = useState(false)
@@ -236,6 +318,8 @@ export default function App() {
   const [layers, setLayers] = useState({
     accidents:     true,
     bikeLanes:     true,
+    bikeParking:   true,
+    bikeRental:    true,
     proposals:     true,
     traffic:       false,
     hazardReports: true,
@@ -364,6 +448,8 @@ export default function App() {
           <MapView
             accidents={processedAccidents}
             bikeLanes={bikeLanes}
+            bikeParking={bikeParking}
+            bikeRental={bikeRental}
             proposals={proposals}
             hazardReports={hazardReports}
             layers={layers}
@@ -416,7 +502,12 @@ export default function App() {
         )}
 
         {/* Admin view */}
-        {view === 'admin' && <AdminPage />}
+        {view === 'admin' && (
+          <AdminPage
+            onImportAccidents={refreshAccidents}
+            onImportBikeLanes={() => { refreshBikeLanes(); refreshBikeParking(); refreshBikeRental() }}
+          />
+        )}
 
       </main>
 

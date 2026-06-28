@@ -29,6 +29,39 @@ export async function activateModel(version) {
   return data
 }
 
+/**
+ * Import accidents from a CSV File object.
+ * Returns { inserted, skipped }.
+ */
+export async function importAccidents(file) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await api.post('/api/import/accidents', form)
+  return data
+}
+
+/**
+ * Import bike lanes from a GeoJSON File object.
+ * Returns { inserted, skipped }.
+ */
+export async function importBikeLanes(file) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await api.post('/api/import/bike_lanes', form)
+  return data
+}
+
+/**
+ * Import danger crossings from a GeoJSON File object.
+ * Returns { inserted, skipped }.
+ */
+export async function importCrossings(file) {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await api.post('/api/import/crossings', form)
+  return data
+}
+
 /** Pre-warm Render's free tier so there's no cold-start delay during demo. */
 export function prewarmBackend() {
   api.get('/health').catch(() => {})

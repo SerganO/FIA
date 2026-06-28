@@ -13,6 +13,8 @@ async function loadFallback(path) {
 export function useMapData() {
   const [accidents,     setAccidents]     = useState(null)
   const [bikeLanes,     setBikeLanes]     = useState(null)
+  const [bikeParking,   setBikeParking]   = useState(null)
+  const [bikeRental,    setBikeRental]    = useState(null)
   const [proposals,     setProposals]     = useState(null)
   const [hazardReports, setHazardReports] = useState(null)
   const [loading,       setLoading]       = useState(true)
@@ -45,6 +47,18 @@ export function useMapData() {
         }
         if (!cancelled) setBikeLanes(blFC)
 
+        // ── Bike parking ───────────────────────────────────────────────────
+        if (supabase) {
+          const { data } = await supabase.rpc('get_bike_parking_geojson')
+          if (data && !cancelled) setBikeParking(data)
+        }
+
+        // ── Bike rental ────────────────────────────────────────────────────
+        if (supabase) {
+          const { data } = await supabase.rpc('get_bike_rental_geojson')
+          if (data && !cancelled) setBikeRental(data)
+        }
+
         // ── Proposals ──────────────────────────────────────────────────────
         if (supabase) {
           const { data, error } = await supabase.rpc('get_proposals_geojson')
@@ -76,6 +90,30 @@ export function useMapData() {
     return () => { cancelled = true }
   }, [])
 
+  const refreshAccidents = async () => {
+    if (!supabase) return
+    const { data } = await supabase.rpc('get_accidents_geojson')
+    if (data) setAccidents(data)
+  }
+
+  const refreshBikeLanes = async () => {
+    if (!supabase) return
+    const { data } = await supabase.rpc('get_bike_lanes_geojson')
+    if (data) setBikeLanes(data)
+  }
+
+  const refreshBikeParking = async () => {
+    if (!supabase) return
+    const { data } = await supabase.rpc('get_bike_parking_geojson')
+    if (data) setBikeParking(data)
+  }
+
+  const refreshBikeRental = async () => {
+    if (!supabase) return
+    const { data } = await supabase.rpc('get_bike_rental_geojson')
+    if (data) setBikeRental(data)
+  }
+
   const refreshProposals = async () => {
     if (!supabase) return
     const { data } = await supabase.rpc('get_proposals_geojson')
@@ -88,5 +126,10 @@ export function useMapData() {
     if (data) setHazardReports(data)
   }
 
-  return { accidents, bikeLanes, proposals, hazardReports, loading, error, refreshProposals, refreshHazardReports }
+  return {
+    accidents, bikeLanes, bikeParking, bikeRental, proposals, hazardReports,
+    loading, error,
+    refreshAccidents, refreshBikeLanes, refreshBikeParking, refreshBikeRental,
+    refreshProposals, refreshHazardReports,
+  }
 }
