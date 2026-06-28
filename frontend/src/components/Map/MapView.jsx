@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, GeoJSON, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import i18n from '../../i18n'
 import { TrafficLayer } from './TrafficLayer'
@@ -73,18 +73,49 @@ function proposalOnEach(feature, layer) {
   `)
 }
 
-// Fly to the user's GPS position on mount; silently falls back to Lviv if denied.
-function LocateOnMount() {
+// ── Hazard report icon & popup ────────────────────────────────────────────────
+const hazardIcon = L.divIcon({
+  className: '',
+  html: '<div style="background:#f97316;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)">!</div>',
+  iconSize:   [22, 22],
+  iconAnchor: [11, 11],
+  popupAnchor:[0, -12],
+})
+
+function hazardOnEach(feature, layer) {
+  const p = feature.properties
+  layer.bindPopup(`
+    <strong>${t(`hazard.types.${p.report_type}`) ?? p.report_type}</strong><br/>
+    ${p.description ? `${p.description}<br/>` : ''}
+    ${t('map.status')}: ${p.status}<br/>
+    ${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}
+  `)
+}
+
+// Fires onMapClick when the map canvas itself is clicked (not a marker/feature).
+function MapClickHandler({ onMapClick }) {
+  useMapEvents({
+    click(e) { onMapClick?.(e.latlng) },
+  })
+  return null
+}
+
+// Fly to GPS on mount; also responds to programmatic flyTo coords from parent.
+function LocateOnMount({ flyTo }) {
   const map = useMap()
 
   useEffect(() => {
     if (!navigator.geolocation) return
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => map.flyTo([coords.latitude, coords.longitude], 14, { duration: 1.2 }),
-      () => { /* permission denied or unavailable — stay on Lviv */ },
+      () => { /* permission denied — stay on Lviv */ },
       { timeout: 8000, maximumAge: 60000 },
     )
   }, [map])
+
+  useEffect(() => {
+    if (flyTo) map.flyTo(flyTo, 15, { duration: 1.0 })
+  }, [map, flyTo])
 
   return null
 }
@@ -135,13 +166,17 @@ export function MapView({
   accidents,
   bikeLanes,
   proposals,
+  hazardReports,
   layers,
   onProposalDrawn,
+  onMapClick,
   canDraw,
+  flyTo,
 }) {
   const accRef      = useRef()
   const blRef       = useRef()
   const proposalRef = useRef()
+  const hazardRef   = useRef()
 
   // Re-render GeoJSON layers when data changes
   useEffect(() => {
@@ -164,6 +199,13 @@ export function MapView({
       if (proposals) proposalRef.current.addData(proposals)
     }
   }, [proposals])
+
+  useEffect(() => {
+    if (hazardRef.current) {
+      hazardRef.current.clearLayers()
+      if (hazardReports) hazardRef.current.addData(hazardReports)
+    }
+  }, [hazardReports])
 
   return (
     <MapContainer
@@ -215,8 +257,22 @@ export function MapView({
         />
       )}
 
+      {/* Hazard reports */}
+      {layers.hazardReports && hazardReports && (
+        <GeoJSON
+          key={`hr-${JSON.stringify(hazardReports).length}`}
+          data={hazardReports}
+          pointToLayer={(f, ll) => L.marker(ll, { icon: hazardIcon })}
+          onEachFeature={hazardOnEach}
+          ref={hazardRef}
+        />
+      )}
+
       {/* Fly to user location on first load */}
-      <LocateOnMount />
+      <LocateOnMount flyTo={flyTo} />
+
+      {/* Map click → hazard report form */}
+      <MapClickHandler onMapClick={onMapClick} />
 
       {/* Draw toolbar (only visible for authorised roles) */}
       <GeomanController onProposalDrawn={onProposalDrawn} enabled={canDraw} />

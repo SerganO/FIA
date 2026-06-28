@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
     # ── Shutdown (nothing to clean up) ───────────────────────────────────────
 
 
-app = FastAPI(title="CycloSafe ML API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="UrbanFlow ML API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

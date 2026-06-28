@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { MapView }    from './components/Map/MapView'
-import { LoginModal } from './components/Auth/LoginModal'
-import { RoleGuard }  from './components/Auth/RoleGuard'
+import { MapView }          from './components/Map/MapView'
+import { LoginModal }       from './components/Auth/LoginModal'
+import { RoleGuard }        from './components/Auth/RoleGuard'
+import { HazardReportForm } from './components/Reports/HazardReportForm'
+import { ProposalsPage }    from './pages/ProposalsPage'
+import { AdminPage }        from './pages/AdminPage'
 import { useAuth }    from './hooks/useAuth'
 import { useMapData } from './hooks/useMapData'
 import { predictSafety, prewarmBackend } from './lib/apiClient'
@@ -19,10 +22,11 @@ const ROLE_COLORS = {
 function LayerControls({ layers, onToggle, filterOpen, onFilterToggle, filterPanelProps }) {
   const { t } = useTranslation()
   const items = [
-    { key: 'accidents',  label: t('layer.accidents'),  dot: '#ef4444', filterable: true },
-    { key: 'bikeLanes',  label: t('layer.bikeLanes'),  dot: '#22c55e' },
-    { key: 'proposals',  label: t('layer.proposals'),  dot: '#3b82f6' },
-    { key: 'traffic',    label: t('layer.traffic'),    dot: '#f97316' },
+    { key: 'accidents',     label: t('layer.accidents'),     dot: '#ef4444', filterable: true },
+    { key: 'bikeLanes',     label: t('layer.bikeLanes'),     dot: '#22c55e' },
+    { key: 'proposals',     label: t('layer.proposals'),     dot: '#3b82f6' },
+    { key: 'hazardReports', label: t('layer.hazardReports'), dot: '#f97316' },
+    { key: 'traffic',       label: t('layer.traffic'),       dot: '#94a3b8' },
   ]
   return (
     <div className="map-controls">
@@ -56,7 +60,7 @@ function LayerControls({ layers, onToggle, filterOpen, onFilterToggle, filterPan
 }
 
 // ── Accident filter panel ────────────────────────────────────────────────────
-// opacity = 0.25 + 0.75 * t^decayRate   (t=0 oldest, t=1 newest in range)
+// opacity = 0.2 + 0.8 * t^decayRate   (t=0 oldest, t=1 newest in range)
 // decayRate=1 → linear   decayRate>1 → sharp drop-off   decayRate<1 → gradual
 
 const toDateStr = ms => new Date(ms).toISOString().slice(0, 10)
@@ -222,15 +226,19 @@ function ProposalModal({ geometry, onSave, onClose }) {
 export default function App() {
   const { t, i18n } = useTranslation()
   const auth = useAuth()
-  const { accidents, bikeLanes, proposals, loading, refreshProposals } = useMapData()
+  const { accidents, bikeLanes, proposals, hazardReports, loading, refreshProposals, refreshHazardReports } = useMapData()
 
+  const [view,           setView]          = useState('map')   // 'map' | 'proposals' | 'admin'
   const [showLogin,      setShowLogin]     = useState(false)
   const [drawnGeom,      setDrawnGeom]     = useState(null)
+  const [hazardLatLng,   setHazardLatLng]  = useState(null)   // map click target for hazard form
+  const [mapFlyTo,       setMapFlyTo]      = useState(null)   // [lat, lng] to fly to
   const [layers, setLayers] = useState({
-    accidents: true,
-    bikeLanes: true,
-    proposals: true,
-    traffic:   false,
+    accidents:     true,
+    bikeLanes:     true,
+    proposals:     true,
+    traffic:       false,
+    hazardReports: true,
   })
 
   // ── Accident filter state ────────────────────────────────────────────────
@@ -271,8 +279,8 @@ export default function App() {
         const d = new Date(f.properties.accident_date).getTime()
         // t = 0 (oldest in range) → 1 (newest in range)
         const t = isNaN(d) ? 0.5 : Math.max(0, Math.min(1, (d - selMin) / spanMs))
-        // opacity = 0.25 + 0.75 * t^decayRate
-        const _opacity = 0.25 + 0.75 * Math.pow(t, accidentDecay)
+        // opacity = 0.2 + 0.8 * t^decayRate
+        const _opacity = 0.2 + 0.8 * Math.pow(t, accidentDecay)
         return { ...f, properties: { ...f.properties, _opacity } }
       })
 
@@ -299,6 +307,19 @@ export default function App() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="app-header">
         <span className="logo">{t('app.title')}</span>
+
+        <nav className="app-nav">
+          {['map', 'proposals'].map(v => (
+            <button key={v} className={`nav-tab${view === v ? ' active' : ''}`} onClick={() => setView(v)}>
+              {t(`nav.${v}`)}
+            </button>
+          ))}
+          <RoleGuard minRole="admin">
+            <button className={`nav-tab${view === 'admin' ? ' active' : ''}`} onClick={() => setView('admin')}>
+              {t('nav.admin')}
+            </button>
+          </RoleGuard>
+        </nav>
 
         <RoleGuard minRole="user">
           <span
@@ -333,17 +354,21 @@ export default function App() {
         )}
       </header>
 
-      {/* ── Map ────────────────────────────────────────────────────────────── */}
+      {/* ── Main ───────────────────────────────────────────────────────────── */}
       <main className="app-main">
-        <div className="map-container">
+
+        {/* Map view */}
+        <div className="map-container" style={{ display: view === 'map' ? 'flex' : 'none', flex: 1 }}>
           {loading && <div className="map-loading">{t('app.loading')}</div>}
 
           <MapView
             accidents={processedAccidents}
             bikeLanes={bikeLanes}
             proposals={proposals}
+            hazardReports={hazardReports}
             layers={layers}
             canDraw={canDraw}
+            flyTo={mapFlyTo}
             onProposalDrawn={(geom) => {
               if (!auth.isAuthenticated) {
                 toast(t('proposal.err.signIn'), { icon: '🔒' })
@@ -351,6 +376,10 @@ export default function App() {
                 return
               }
               setDrawnGeom(geom)
+            }}
+            onMapClick={(latlng) => {
+              if (!auth.isAuthenticated) return
+              setHazardLatLng(latlng)
             }}
           />
 
@@ -370,6 +399,25 @@ export default function App() {
             />
           </div>
         </div>
+
+        {/* Proposals list view */}
+        {view === 'proposals' && (
+          <ProposalsPage
+            proposals={proposals}
+            onViewOnMap={(proposal) => {
+              const coords = proposal.geometry?.coordinates
+              if (coords?.length) {
+                const mid = coords[Math.floor(coords.length / 2)]
+                setMapFlyTo([mid[1], mid[0]])
+              }
+              setView('map')
+            }}
+          />
+        )}
+
+        {/* Admin view */}
+        {view === 'admin' && <AdminPage />}
+
       </main>
 
       {/* ── Modals ─────────────────────────────────────────────────────────── */}
@@ -380,6 +428,14 @@ export default function App() {
           geometry={drawnGeom}
           onSave={refreshProposals}
           onClose={() => setDrawnGeom(null)}
+        />
+      )}
+
+      {hazardLatLng && (
+        <HazardReportForm
+          latlng={hazardLatLng}
+          onSubmit={refreshHazardReports}
+          onClose={() => setHazardLatLng(null)}
         />
       )}
     </div>

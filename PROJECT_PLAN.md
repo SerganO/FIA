@@ -1,6 +1,6 @@
 # Micromobility Analytics Platform — Hackathon MVP Plan
 
-**Project:** CycloSafe — Data-Driven Cycling Infrastructure & Safety Platform  
+**Project:** UrbanFlow — Data-Driven Cycling Infrastructure & Safety Platform  
 **Timeline:** ~48 hours (one weekend)  
 **Goal:** Demo-stable MVP with core P1 features fully working, P2 partially working, P3 as a stretch goal.
 
@@ -535,7 +535,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import predict, retrain, export
 
-app = FastAPI(title="CycloSafe ML API", version="1.0.0")
+app = FastAPI(title="UrbanFlow ML API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,

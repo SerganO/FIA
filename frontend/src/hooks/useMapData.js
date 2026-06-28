@@ -11,11 +11,12 @@ async function loadFallback(path) {
 }
 
 export function useMapData() {
-  const [accidents,  setAccidents]  = useState(null)
-  const [bikeLanes,  setBikeLanes]  = useState(null)
-  const [proposals,  setProposals]  = useState(null)
-  const [loading,    setLoading]    = useState(true)
-  const [error,      setError]      = useState(null)
+  const [accidents,     setAccidents]     = useState(null)
+  const [bikeLanes,     setBikeLanes]     = useState(null)
+  const [proposals,     setProposals]     = useState(null)
+  const [hazardReports, setHazardReports] = useState(null)
+  const [loading,       setLoading]       = useState(true)
+  const [error,         setError]         = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -49,6 +50,12 @@ export function useMapData() {
           const { data, error } = await supabase.rpc('get_proposals_geojson')
           if (!error && !cancelled) setProposals(data)
         }
+
+        // ── Hazard reports ─────────────────────────────────────────────────
+        if (supabase) {
+          const { data } = await supabase.rpc('get_hazard_reports_geojson')
+          if (data && !cancelled) setHazardReports(data)
+        }
       } catch (err) {
         console.error('[useMapData]', err)
         if (!cancelled) setError(err.message)
@@ -75,5 +82,11 @@ export function useMapData() {
     if (data) setProposals(data)
   }
 
-  return { accidents, bikeLanes, proposals, loading, error, refreshProposals }
+  const refreshHazardReports = async () => {
+    if (!supabase) return
+    const { data } = await supabase.rpc('get_hazard_reports_geojson')
+    if (data) setHazardReports(data)
+  }
+
+  return { accidents, bikeLanes, proposals, hazardReports, loading, error, refreshProposals, refreshHazardReports }
 }
