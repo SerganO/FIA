@@ -1,0 +1,30 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[24.020, 49.843], [24.032, 49.843], [24.045, 49.843]] },
+      "properties": { "name": "Велодоріжка вул. Городоцька", "lane_type": "painted", "surface": "asphalt" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[24.032, 49.842], [24.032, 49.852], [24.032, 49.862]] },
+      "properties": { "name": "Велодоріжка просп. Свободи", "lane_type": "protected", "surface": "asphalt" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[23.990, 49.830], [24.005, 49.832], [24.020, 49.834]] },
+      "properties": { "name": "Велодоріжка вул. Шевченка", "lane_type": "painted", "surface": "asphalt" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[24.045, 49.808], [24.050, 49.815], [24.055, 49.822]] },
+      "properties": { "name": "Велодоріжка вул. Сихівська", "lane_type": "path", "surface": "asphalt" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "LineString", "coordinates": [[24.060, 49.850], [24.065, 49.858], [24.072, 49.863]] },
+      "properties": { "name": "Велодоріжка вул. Липинського", "lane_type": "painted", "surface": "asphalt" }
+    }
+  ]
+}
