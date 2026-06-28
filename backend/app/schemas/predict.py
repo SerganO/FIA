@@ -41,6 +41,9 @@ class FeatureVector(BaseModel):
     num_vertices: int
     bearing_variance: float
     intersections_count: int
+    crossings_within_100m: int
+    uncontrolled_crossings_within_100m: int
+    nearest_crossing_m: float
 
 
 class PredictResponse(BaseModel):

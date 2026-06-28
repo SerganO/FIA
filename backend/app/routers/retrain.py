@@ -24,7 +24,7 @@ async def retrain_endpoint(request: RetrainRequest):
             from app.ml.predictor import load_active_model
 
             supabase = get_supabase()
-            logs = supabase.table("ml_model_logs").select("version").execute().data
+            logs = supabase.rpc("get_ml_model_versions", {}).execute().data or []
             version_tag = f"model_v{len(logs) + 1}"
 
             result = train_model(supabase, version_tag)
@@ -49,29 +49,23 @@ async def retrain_endpoint(request: RetrainRequest):
 @router.get("/model_versions", response_model=ModelVersionsResponse)
 async def get_model_versions():
     supabase = get_supabase()
-    data = (
-        supabase.table("ml_model_logs")
-        .select("version, is_active, accuracy, f1_score, train_samples, created_at")
-        .order("created_at", desc=True)
-        .execute()
-        .data
-    )
+    data = supabase.rpc("get_ml_model_versions", {}).execute().data or []
     return ModelVersionsResponse(versions=[ModelVersion(**v) for v in data])
 
 
 @router.post("/activate_model/{version}")
 async def activate_model_endpoint(version: str):
     supabase = get_supabase()
-    existing = supabase.table("ml_model_logs").select("id").eq("version", version).execute().data
-    if not existing:
+    all_versions = supabase.rpc("get_ml_model_versions", {}).execute().data or []
+    match = next((v for v in all_versions if v["version"] == version), None)
+    if not match:
         raise HTTPException(status_code=404, detail=f"Version '{version}' not found")
 
     from app.ml.model_store import activate_model, download_model
     from app.ml.predictor import load_active_model
 
-    # Grab storage_path for this version
-    row = supabase.table("ml_model_logs").select("storage_path").eq("version", version).execute().data[0]
-    download_model(row["storage_path"], version)
+    storage_path = match.get("storage_path") or f"{version}.pkl"
+    download_model(storage_path, version)
     activate_model(supabase, version, {})
     load_active_model()
     return {"status": "ok", "activated": version}

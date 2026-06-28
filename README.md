@@ -318,6 +318,7 @@ supabase/migrations/017_activate_model_rpc.sql
 supabase/migrations/018_fix_storage_policy.sql
 supabase/migrations/019_service_role_bypassrls.sql
 supabase/migrations/020_storage_open_policy.sql
+supabase/migrations/021_ml_logs_service_role_select.sql
 ```
 
 ---
@@ -435,7 +436,7 @@ Project/
 │   │   └── seed_model.py  # seeds all tables + trains initial model
 │   └── .env               # gitignored — copy from .env.example
 └── supabase/
-    └── migrations/        # run in Supabase SQL Editor in order (001–020)
+    └── migrations/        # run in Supabase SQL Editor in order (001–021)
 ```
 
 ---
