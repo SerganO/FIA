@@ -235,6 +235,10 @@ body {
 .safety-low    { background: #dcfce7; color: #15803d; }
 .safety-medium { background: #fef9c3; color: #a16207; }
 .safety-high   { background: #fee2e2; color: #b91c1c; }
+/* Priority score badges (replaces safety-* in proposal cards) */
+.priority-high   { background: #dbeafe; color: #1d4ed8; }
+.priority-medium { background: #fef9c3; color: #a16207; }
+.priority-low    { background: #f1f5f9; color: #64748b; }
 
 /* ─── Loading / error states ─────────────────────────────────────────────── */
 .map-loading {

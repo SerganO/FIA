@@ -16,19 +16,13 @@ def load_active_model() -> None:
     from app.ml.model_store import download_model
 
     supabase = get_supabase()
-    rows = (
-        supabase.table("ml_model_logs")
-        .select("version, storage_path")
-        .eq("is_active", True)
-        .limit(1)
-        .execute()
-        .data
-    )
-    if not rows:
+    all_versions = supabase.rpc("get_ml_model_versions", {}).execute().data or []
+    active = next((r for r in all_versions if r.get("is_active")), None)
+    if not active:
         raise RuntimeError("No active model in ml_model_logs — run scripts/seed_model.py first")
 
-    version = rows[0]["version"]
-    local_path = download_model(rows[0]["storage_path"], version)
+    version = active["version"]
+    local_path = download_model(active["storage_path"], version)
 
     with open(local_path, "rb") as f:
         payload = pickle.load(f)
@@ -47,14 +41,14 @@ def predict_safety(features: dict) -> PredictResponse:
     score = round(prob_safe * 100, 2)
 
     if score >= 70:
-        risk_level = "low"
-        rec = "Good candidate for a standard painted lane."
+        risk_level = "high"
+        rec = "ml.recommendation.high"
     elif score >= 45:
         risk_level = "medium"
-        rec = "Moderate risk. Consider physical barriers or traffic calming measures."
+        rec = "ml.recommendation.medium"
     else:
-        risk_level = "high"
-        rec = "High-risk segment. Significant infrastructure investment needed."
+        risk_level = "low"
+        rec = "ml.recommendation.low"
 
     return PredictResponse(
         safety_score=score,

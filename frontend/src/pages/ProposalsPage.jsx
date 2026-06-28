@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../hooks/useAuth'
 import { ProposalCard } from '../components/Proposals/ProposalCard'
 
 const SORT_OPTIONS = ['date', 'score', 'votes']
 
-export function ProposalsPage({ proposals, onViewOnMap }) {
+export function ProposalsPage({ proposals, onViewOnMap, onDelete }) {
   const { t } = useTranslation()
+  const { user, role } = useAuth()
   const [sortBy, setSortBy] = useState('date')
 
   const features = proposals?.features ?? []
@@ -44,6 +46,9 @@ export function ProposalsPage({ proposals, onViewOnMap }) {
               key={f.properties?.id ?? i}
               proposal={f}
               onViewOnMap={onViewOnMap}
+              userId={user?.id}
+              userRole={role}
+              onDelete={onDelete}
             />
           ))}
         </div>

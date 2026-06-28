@@ -242,8 +242,8 @@ function ProposalModal({ geometry, onSave, onClose }) {
     }
   }
 
-  const risk = score?.risk_level
-  const safetyClass = risk ? `safety-${risk}` : 'safety-medium'
+  const priority = score?.risk_level
+  const safetyClass = priority ? `priority-${priority}` : 'priority-medium'
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -270,7 +270,7 @@ function ProposalModal({ geometry, onSave, onClose }) {
                 </span>
               </div>
               <p style={{ marginTop: 8, fontSize: '.85rem', color: 'var(--color-muted)' }}>
-                {score.recommendation}
+                {t(score.recommendation)}
               </p>
               <div style={{ marginTop: 8, fontSize: '.75rem', color: 'var(--color-muted)', display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
                 <span>{t('proposal.accidents100m')}: <strong>{score.features?.accidents_within_100m}</strong></span>
@@ -498,6 +498,7 @@ export default function App() {
               }
               setView('map')
             }}
+            onDelete={refreshProposals}
           />
         )}
 

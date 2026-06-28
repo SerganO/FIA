@@ -32,7 +32,7 @@
   "proposal": {
     "heading": "New Bike Lane Proposal",
     "calculating": "Calculating safety score…",
-    "scoreUnavailable": "Score unavailable — the proposal will be saved without an ML score.",
+    "scoreUnavailable": "Score unavailable — the proposal will be saved without a priority score.",
     "accidents100m": "Accidents 100m",
     "length": "Length",
     "nearestLane": "Nearest lane",
@@ -40,6 +40,8 @@
     "titlePlaceholder": "e.g. New lane on High Street",
     "descLabel": "Description (optional)",
     "descPlaceholder": "Context, motivation, references…",
+    "drawBtn": "Propose Lane",
+    "cancelDraw": "Cancel Drawing",
     "cancel": "Cancel",
     "save": "Save Proposal",
     "saving": "Saving…",
@@ -81,7 +83,7 @@
     "lighting": "Lighting",
     "type": "Type",
     "surface": "Surface",
-    "safetyScore": "Safety score",
+    "safetyScore": "Priority score",
     "status": "Status",
     "pending": "Pending",
     "bikeParking": "Bike Parking",
@@ -119,8 +121,13 @@
       "score": "Score",
       "votes": "Votes"
     },
-    "empty":     "No proposals yet.",
-    "viewOnMap": "View on map"
+    "empty":         "No proposals yet.",
+    "viewOnMap":     "View on map",
+    "delete":        "Delete",
+    "deleteConfirm": "Sure?",
+    "deleteYes":     "Yes",
+    "deleteNo":      "No",
+    "deleted":       "Proposal deleted"
   },
   "hazard": {
     "title":          "Report a Hazard",
@@ -137,6 +144,13 @@
       "near_miss":       "Near miss",
       "poor_lighting":   "Poor lighting",
       "other":           "Other"
+    }
+  },
+  "ml": {
+    "recommendation": {
+      "high":   "High-priority — significant accident history with no existing infrastructure. Recommended for immediate planning.",
+      "medium": "Moderate priority — some accident history or gap in network coverage. Consider for medium-term planning.",
+      "low":    "Low priority — area is already well-served by existing lanes or has low accident history."
     }
   },
   "admin": {

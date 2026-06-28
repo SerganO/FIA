@@ -36,8 +36,8 @@ def _parse_geom(raw) -> dict | None:
 def build_training_dataset(supabase) -> tuple[list, list]:
     """
     Build a labelled feature matrix from existing bike lanes + the accident index.
-    Label: 1 (safe)  = 0 accidents within 100 m
-    Label: 0 (risky) = ≥2 accidents within 100 m
+    Label: 1 (high priority) = ≥2 accidents within 100 m — location clearly needs protection
+    Label: 0 (low priority)  = 0 accidents within 100 m — already safe, low intervention value
     Rows with exactly 1 accident are discarded (ambiguous).
     """
     from app.ml.spatial_index import load_accident_index
@@ -63,7 +63,7 @@ def build_training_dataset(supabase) -> tuple[list, list]:
         if n == 1:
             continue
         X.append([feats[f] for f in FEATURE_NAMES])
-        y.append(1 if n == 0 else 0)
+        y.append(1 if n >= 2 else 0)
 
     if len(X) < 10:
         raise ValueError(f"Only {len(X)} usable training samples — need at least 10")
@@ -73,7 +73,7 @@ def build_training_dataset(supabase) -> tuple[list, list]:
 def train_model(supabase, version_tag: str) -> dict:
     logger.info(f"Training {version_tag}…")
     X, y = build_training_dataset(supabase)
-    logger.info(f"Dataset: {len(X)} samples ({sum(y)} safe / {len(y) - sum(y)} risky)")
+    logger.info(f"Dataset: {len(X)} samples ({sum(y)} high-priority / {len(y) - sum(y)} low-priority)")
 
     stratify = y if min(sum(y), len(y) - sum(y)) >= 2 else None
     X_train, X_test, y_train, y_test = train_test_split(

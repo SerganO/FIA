@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { MapContainer, TileLayer, GeoJSON, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
+import '@geoman-io/leaflet-geoman-free'
 import i18n from '../../i18n'
 import { TrafficLayer } from './TrafficLayer'
 
@@ -58,7 +60,8 @@ function bikeLaneOnEach(feature, layer) {
 
 function proposalStyle(feature) {
   const score = feature.properties.safety_score
-  const color = score == null ? '#94a3b8' : score >= 70 ? '#22c55e' : score >= 45 ? '#f97316' : '#ef4444'
+  // Blue/orange/red — never green so proposals don't look like actual bike lanes
+  const color = score == null ? '#94a3b8' : score >= 70 ? '#3b82f6' : score >= 45 ? '#f97316' : '#ef4444'
   return { color, weight: 5, opacity: 0.9, dashArray: '8 4' }
 }
 
@@ -131,9 +134,14 @@ function hazardOnEach(feature, layer) {
 }
 
 // Fires onMapClick when the map canvas itself is clicked (not a marker/feature).
+// Skips when Geoman is in draw or edit mode so draw-point clicks don't open the hazard form.
 function MapClickHandler({ onMapClick }) {
+  const map = useMap()
   useMapEvents({
-    click(e) { onMapClick?.(e.latlng) },
+    click(e) {
+      if (map.pm?.globalDrawModeEnabled() || map.pm?.globalEditModeEnabled()) return
+      onMapClick?.(e.latlng)
+    },
   })
   return null
 }
@@ -158,46 +166,72 @@ function LocateOnMount({ flyTo }) {
   return null
 }
 
-// Geoman draw controller (mounted inside MapContainer so it can useMap)
-function GeomanController({ onProposalDrawn, enabled }) {
+// Custom "Propose Lane" button rendered as a Leaflet control — no Geoman toolbar.
+function DrawButtonControl({ onProposalDrawn }) {
   const map = useMap()
+  const [drawing, setDrawing] = useState(false)
+  const [container, setContainer] = useState(null)
+
+  // Create a Leaflet control that owns a DOM node we can portal into.
+  useEffect(() => {
+    const div = L.DomUtil.create('div', '')
+    L.DomEvent.disableClickPropagation(div)
+    L.DomEvent.disableScrollPropagation(div)
+    const ctrl = L.control({ position: 'bottomleft' })
+    ctrl.onAdd = () => div
+    ctrl.addTo(map)
+    setContainer(div)
+    return () => ctrl.remove()
+  }, [map])
 
   useEffect(() => {
-    if (!enabled) return
-    if (!map.pm) return  // geoman not loaded
-
-    map.pm.addControls({
-      position:     'topleft',
-      drawMarker:   false,
-      drawCircle:   false,
-      drawPolygon:  false,
-      drawRectangle: false,
-      drawCircleMarker: false,
-      drawText:     false,
-      editMode:     true,
-      dragMode:     false,
-      cutPolygon:   false,
-      removalMode:  true,
-    })
-
+    if (!map.pm) return
     const handleCreate = (e) => {
       if (e.shape === 'Line') {
         const latlngs = e.layer.getLatLngs()
         const coordinates = latlngs.map(ll => [ll.lng, ll.lat])
-        const geojson = { type: 'LineString', coordinates }
         map.removeLayer(e.layer)
-        if (onProposalDrawn) onProposalDrawn(geojson)
+        setDrawing(false)
+        onProposalDrawn?.({ type: 'LineString', coordinates })
       }
     }
-
     map.on('pm:create', handleCreate)
-    return () => {
-      map.off('pm:create', handleCreate)
-      if (map.pm) map.pm.removeControls()
-    }
-  }, [map, enabled, onProposalDrawn])
+    return () => map.off('pm:create', handleCreate)
+  }, [map, onProposalDrawn])
 
-  return null
+  function toggleDraw() {
+    if (!map.pm) return
+    if (drawing) {
+      map.pm.disableDraw()
+      setDrawing(false)
+    } else {
+      map.pm.enableDraw('Line', { snappable: false })
+      setDrawing(true)
+    }
+  }
+
+  if (!container) return null
+  return createPortal(
+    <button
+      onClick={toggleDraw}
+      style={{
+        background:   drawing ? '#ef4444' : '#2563eb',
+        color:        '#fff',
+        border:       'none',
+        borderRadius: '8px',
+        padding:      '10px 20px',
+        fontWeight:   700,
+        fontSize:     '14px',
+        cursor:       'pointer',
+        boxShadow:    '0 2px 8px rgba(0,0,0,.3)',
+        whiteSpace:   'nowrap',
+        marginBottom: '8px',
+      }}
+    >
+      {drawing ? t('proposal.cancelDraw') : `✏ ${t('proposal.drawBtn')}`}
+    </button>,
+    container,
+  )
 }
 
 export function MapView({
@@ -352,8 +386,8 @@ export function MapView({
       {/* Map click → hazard report form */}
       <MapClickHandler onMapClick={onMapClick} />
 
-      {/* Draw toolbar (only visible for authorised roles) */}
-      <GeomanController onProposalDrawn={onProposalDrawn} enabled={canDraw} />
+      {/* Custom draw button (only visible for authorised roles) */}
+      {canDraw && <DrawButtonControl onProposalDrawn={onProposalDrawn} />}
     </MapContainer>
   )
 }

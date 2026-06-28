@@ -219,32 +219,16 @@ def _synthetic_dataset(n: int = 600) -> tuple[list, list]:
     Generate synthetic labelled rows when real bike-lane data is unavailable.
     Feature distributions are calibrated to resemble realistic urban scenarios.
     """
+    # Priority model: label=1 means "high planning priority" (where a lane is most needed).
+    # High priority = many accidents + infrastructure gap (far from existing lanes).
+    # Low priority  = few accidents + already well-served by existing lanes.
     rng = np.random.RandomState(42)
     X, y = [], []
     for _ in range(n):
-        safe = rng.random() > 0.45
-        if safe:
+        high_priority = rng.random() > 0.45
+        if high_priority:
             row = {
-                "accidents_within_50m":               rng.poisson(0.2),
-                "accidents_within_100m":              rng.poisson(0.5),
-                "accidents_within_500m":              rng.poisson(2),
-                "fatal_accidents_100m":               0,
-                "serious_accidents_100m":             rng.binomial(1, 0.05),
-                "weighted_severity_score":            float(rng.exponential(0.5)),
-                "accident_density_per_km":            float(rng.exponential(0.3)),
-                "nearest_bike_lane_m":                float(rng.uniform(0, 200)),
-                "existing_lane_overlap_pct":          float(rng.uniform(0.3, 1.0)),
-                "bike_lane_density_500m":             float(rng.uniform(200, 2000)),
-                "length_m":                           float(rng.uniform(200, 1500)),
-                "num_vertices":                       int(rng.randint(2, 15)),
-                "bearing_variance":                   float(rng.uniform(0, 50)),
-                "intersections_count":                int(rng.randint(0, 3)),
-                "crossings_within_100m":              int(rng.poisson(1)),
-                "uncontrolled_crossings_within_100m": int(rng.binomial(1, 0.1)),
-                "nearest_crossing_m":                 float(rng.uniform(30, 200)),
-            }
-        else:
-            row = {
+                # Many accidents — clear evidence of danger for cyclists
                 "accidents_within_50m":               rng.poisson(2),
                 "accidents_within_100m":              rng.poisson(5),
                 "accidents_within_500m":              rng.poisson(15),
@@ -252,19 +236,46 @@ def _synthetic_dataset(n: int = 600) -> tuple[list, list]:
                 "serious_accidents_100m":             int(rng.poisson(1.5)),
                 "weighted_severity_score":            float(rng.exponential(8)),
                 "accident_density_per_km":            float(rng.exponential(3)),
-                "nearest_bike_lane_m":                float(rng.uniform(300, 2000)),
-                "existing_lane_overlap_pct":          float(rng.uniform(0, 0.2)),
-                "bike_lane_density_500m":             float(rng.uniform(0, 300)),
-                "length_m":                           float(rng.uniform(100, 2000)),
-                "num_vertices":                       int(rng.randint(2, 20)),
-                "bearing_variance":                   float(rng.uniform(20, 200)),
-                "intersections_count":                int(rng.randint(2, 8)),
+                # Has an infrastructure gap — even 80-200m counts when accidents are high
+                "nearest_bike_lane_m":                float(rng.uniform(80, 2000)),
+                "existing_lane_overlap_pct":          float(rng.uniform(0, 0.3)),
+                "bike_lane_density_500m":             float(rng.uniform(0, 500)),
+                # Reasonable geometry — buildable route
+                "length_m":                           float(rng.uniform(200, 1500)),
+                "num_vertices":                       int(rng.randint(2, 15)),
+                "bearing_variance":                   float(rng.uniform(0, 50)),
+                "intersections_count":                int(rng.randint(0, 3)),
+                # Many uncontrolled crossings nearby — high collision risk
                 "crossings_within_100m":              int(rng.poisson(5)),
                 "uncontrolled_crossings_within_100m": int(rng.poisson(3)),
                 "nearest_crossing_m":                 float(rng.uniform(5, 60)),
             }
+        else:
+            row = {
+                # Few accidents — area is already relatively safe
+                "accidents_within_50m":               rng.poisson(0.2),
+                "accidents_within_100m":              rng.poisson(0.5),
+                "accidents_within_500m":              rng.poisson(2),
+                "fatal_accidents_100m":               0,
+                "serious_accidents_100m":             rng.binomial(1, 0.05),
+                "weighted_severity_score":            float(rng.exponential(0.5)),
+                "accident_density_per_km":            float(rng.exponential(0.3)),
+                # Near existing lanes — largely redundant with current infrastructure
+                "nearest_bike_lane_m":                float(rng.uniform(0, 80)),
+                "existing_lane_overlap_pct":          float(rng.uniform(0.5, 1.0)),
+                "bike_lane_density_500m":             float(rng.uniform(500, 2000)),
+                # Less ideal geometry
+                "length_m":                           float(rng.uniform(100, 2000)),
+                "num_vertices":                       int(rng.randint(2, 20)),
+                "bearing_variance":                   float(rng.uniform(20, 200)),
+                "intersections_count":                int(rng.randint(2, 8)),
+                # Few crossings — less need for protection
+                "crossings_within_100m":              int(rng.poisson(1)),
+                "uncontrolled_crossings_within_100m": int(rng.binomial(1, 0.1)),
+                "nearest_crossing_m":                 float(rng.uniform(30, 200)),
+            }
         X.append([row[f] for f in FEATURE_NAMES])
-        y.append(1 if safe else 0)
+        y.append(1 if high_priority else 0)
     return X, y
 
 

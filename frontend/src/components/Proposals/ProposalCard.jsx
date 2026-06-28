@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'react-hot-toast'
+import { supabase } from '../../lib/supabaseClient'
 import { VoteButtons } from './VoteButtons'
 import { CommentThread } from './CommentThread'
 
@@ -10,17 +12,36 @@ const statusStyle = {
   rejected:     { background: '#fee2e2', color: '#b91c1c' },
 }
 
-function safetyClass(score) {
-  if (score == null) return 'safety-medium'
-  if (score >= 70)   return 'safety-low'
-  if (score >= 45)   return 'safety-medium'
-  return 'safety-high'
+function priorityClass(score) {
+  if (score == null) return 'priority-medium'
+  if (score >= 70)   return 'priority-high'
+  if (score >= 45)   return 'priority-medium'
+  return 'priority-low'
 }
 
-export function ProposalCard({ proposal, onViewOnMap }) {
+export function ProposalCard({ proposal, onViewOnMap, userId, userRole, onDelete }) {
   const { t } = useTranslation()
-  const [showComments, setShowComments] = useState(false)
+  const [showComments,  setShowComments]  = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting,      setDeleting]      = useState(false)
   const p = proposal.properties ?? proposal
+
+  const canDelete = p.id && (p.proposed_by === userId || userRole === 'admin')
+
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      const { error } = await supabase.from('proposals').delete().eq('id', p.id)
+      if (error) throw error
+      toast.success(t('proposals.deleted'))
+      onDelete?.()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
+  }
 
   return (
     <div className="proposal-card">
@@ -28,7 +49,7 @@ export function ProposalCard({ proposal, onViewOnMap }) {
         <div className="proposal-card-title-row">
           <h3 className="proposal-card-title">{p.title}</h3>
           {p.safety_score != null && (
-            <span className={`safety-badge ${safetyClass(p.safety_score)}`} style={{ fontSize: '.72rem' }}>
+            <span className={`safety-badge ${priorityClass(p.safety_score)}`} style={{ fontSize: '.72rem' }}>
               {p.safety_score}/100
             </span>
           )}
@@ -62,6 +83,7 @@ export function ProposalCard({ proposal, onViewOnMap }) {
           >
             💬 {p.comment_count ?? 0}
           </button>
+
           {onViewOnMap && (
             <button
               className="btn btn-ghost"
@@ -70,6 +92,39 @@ export function ProposalCard({ proposal, onViewOnMap }) {
             >
               🗺 {t('proposals.viewOnMap')}
             </button>
+          )}
+
+          {canDelete && !confirmDelete && (
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: '.75rem', padding: '4px 8px', color: '#ef4444' }}
+              onClick={() => setConfirmDelete(true)}
+            >
+              🗑 {t('proposals.delete')}
+            </button>
+          )}
+
+          {canDelete && confirmDelete && (
+            <>
+              <span style={{ fontSize: '.75rem', color: 'var(--color-muted)' }}>
+                {t('proposals.deleteConfirm')}
+              </span>
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: '.75rem', padding: '4px 8px', color: '#ef4444', fontWeight: 700 }}
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? '…' : t('proposals.deleteYes')}
+              </button>
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: '.75rem', padding: '4px 8px' }}
+                onClick={() => setConfirmDelete(false)}
+              >
+                {t('proposals.deleteNo')}
+              </button>
+            </>
           )}
         </div>
       </div>

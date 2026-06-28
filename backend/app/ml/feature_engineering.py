@@ -86,8 +86,9 @@ def _crossing_features(geom_dict: dict) -> dict:
         from app.db.supabase_client import get_supabase
         supabase = get_supabase()
         rows = supabase.rpc("get_danger_crossing_features", {"p_geom": geom_dict}).execute().data
-        if rows and rows[0]:
-            r = rows[0]
+        # RPC returns a JSONB scalar (dict) directly; list form also handled for safety
+        r = rows[0] if isinstance(rows, list) and rows else (rows if isinstance(rows, dict) else None)
+        if r:
             return {
                 "crossings_within_100m":              int(r.get("crossings_within_100m", 0) or 0),
                 "uncontrolled_crossings_within_100m": int(r.get("uncontrolled_crossings_within_100m", 0) or 0),
