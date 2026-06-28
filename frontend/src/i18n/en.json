@@ -1,0 +1,87 @@
+{
+  "app": {
+    "title": "🚲 CycloSafe",
+    "loading": "Loading map data…",
+    "signIn": "Sign In",
+    "signOut": "Sign Out"
+  },
+  "role": {
+    "guest": "guest",
+    "user": "user",
+    "city_official": "city official",
+    "admin": "admin"
+  },
+  "layer": {
+    "accidents": "Accidents",
+    "bikeLanes": "Bike Lanes",
+    "proposals": "Proposals",
+    "traffic": "Live Traffic"
+  },
+  "filter": {
+    "title": "Accident Filters",
+    "dateRange": "Date range",
+    "fadeRate": "Fade rate",
+    "gradual": "Gradual",
+    "sharp": "Sharp",
+    "tooltip": "Filter accidents"
+  },
+  "proposal": {
+    "heading": "New Bike Lane Proposal",
+    "calculating": "Calculating safety score…",
+    "scoreUnavailable": "Score unavailable — the proposal will be saved without an ML score.",
+    "accidents100m": "Accidents 100m",
+    "length": "Length",
+    "nearestLane": "Nearest lane",
+    "titleLabel": "Title *",
+    "titlePlaceholder": "e.g. New lane on High Street",
+    "descLabel": "Description (optional)",
+    "descPlaceholder": "Context, motivation, references…",
+    "cancel": "Cancel",
+    "save": "Save Proposal",
+    "saving": "Saving…",
+    "pending": "Pending",
+    "err": {
+      "noTitle": "Please enter a title",
+      "signIn": "Sign in to save proposals",
+      "ml": "ML service unavailable — score will be null"
+    }
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "createAccount": "Create Account",
+    "username": "Username",
+    "email": "Email",
+    "password": "Password",
+    "usernamePlaceholder": "your_username",
+    "emailPlaceholder": "you@example.com",
+    "close": "Close",
+    "wait": "Please wait…",
+    "signedIn": "Signed in!",
+    "accountCreated": "Account created — check your email to confirm.",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "register": "Register"
+  },
+  "map": {
+    "accident": "Accident",
+    "bikeLane": "Bike Lane",
+    "proposal": "Proposal",
+    "severity": {
+      "1": "Minor",
+      "2": "Serious",
+      "3": "Fatal"
+    },
+    "date": "Date",
+    "road": "Road",
+    "weather": "Weather",
+    "lighting": "Lighting",
+    "type": "Type",
+    "surface": "Surface",
+    "safetyScore": "Safety score",
+    "status": "Status",
+    "pending": "Pending"
+  },
+  "lang": {
+    "switch": "UA"
+  }
+}

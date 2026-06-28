@@ -1,15 +1,17 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import toast from 'react-hot-toast'
 
 export function LoginModal({ onClose }) {
+  const { t } = useTranslation()
   const { signIn, signUp } = useAuth()
-  const [mode, setMode]       = useState('login') // 'login' | 'register'
-  const [email, setEmail]     = useState('')
+  const [mode, setMode]         = useState('login')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
-  const [busy, setBusy]       = useState(false)
-  const [err, setErr]         = useState('')
+  const [busy, setBusy]         = useState(false)
+  const [err, setErr]           = useState('')
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -18,10 +20,10 @@ export function LoginModal({ onClose }) {
     try {
       if (mode === 'login') {
         await signIn(email, password)
-        toast.success('Signed in!')
+        toast.success(t('auth.signedIn'))
       } else {
         await signUp(email, password, username)
-        toast.success('Account created — check your email to confirm.')
+        toast.success(t('auth.accountCreated'))
       }
       onClose()
     } catch (error) {
@@ -34,35 +36,35 @@ export function LoginModal({ onClose }) {
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ position: 'relative' }}>
-        <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
-        <h2>{mode === 'login' ? 'Sign In' : 'Create Account'}</h2>
+        <button className="modal-close" onClick={onClose} aria-label={t('auth.close')}>×</button>
+        <h2>{mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}</h2>
 
         <form onSubmit={handleSubmit}>
           {mode === 'register' && (
             <div className="form-group">
-              <label>Username</label>
+              <label>{t('auth.username')}</label>
               <input
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="your_username"
+                placeholder={t('auth.usernamePlaceholder')}
                 required
                 minLength={3}
               />
             </div>
           )}
           <div className="form-group">
-            <label>Email</label>
+            <label>{t('auth.email')}</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t('auth.emailPlaceholder')}
               required
             />
           </div>
           <div className="form-group">
-            <label>Password</label>
+            <label>{t('auth.password')}</label>
             <input
               type="password"
               value={password}
@@ -76,17 +78,17 @@ export function LoginModal({ onClose }) {
           {err && <p className="form-error">{err}</p>}
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={busy}>
-            {busy ? 'Please wait…' : (mode === 'login' ? 'Sign In' : 'Create Account')}
+            {busy ? t('auth.wait') : (mode === 'login' ? t('auth.signIn') : t('auth.createAccount'))}
           </button>
         </form>
 
         <p style={{ marginTop: 14, fontSize: '.85rem', textAlign: 'center', color: 'var(--color-muted)' }}>
-          {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+          {mode === 'login' ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
           <button
             style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 600 }}
             onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setErr('') }}
           >
-            {mode === 'login' ? 'Register' : 'Sign In'}
+            {mode === 'login' ? t('auth.register') : t('auth.signIn')}
           </button>
         </p>
       </div>

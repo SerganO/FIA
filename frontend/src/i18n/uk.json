@@ -1,0 +1,87 @@
+{
+  "app": {
+    "title": "🚲 CycloSafe",
+    "loading": "Завантаження даних карти…",
+    "signIn": "Увійти",
+    "signOut": "Вийти"
+  },
+  "role": {
+    "guest": "гість",
+    "user": "користувач",
+    "city_official": "міський службовець",
+    "admin": "адміністратор"
+  },
+  "layer": {
+    "accidents": "ДТП",
+    "bikeLanes": "Велодоріжки",
+    "proposals": "Пропозиції",
+    "traffic": "Трафік (Live)"
+  },
+  "filter": {
+    "title": "Фільтр ДТП",
+    "dateRange": "Діапазон дат",
+    "fadeRate": "Затухання",
+    "gradual": "Плавно",
+    "sharp": "Різко",
+    "tooltip": "Фільтрувати ДТП"
+  },
+  "proposal": {
+    "heading": "Нова пропозиція велодоріжки",
+    "calculating": "Розраховуємо оцінку безпеки…",
+    "scoreUnavailable": "Оцінка недоступна — пропозицію буде збережено без оцінки ML.",
+    "accidents100m": "ДТП в 100м",
+    "length": "Довжина",
+    "nearestLane": "Найближча доріжка",
+    "titleLabel": "Назва *",
+    "titlePlaceholder": "напр. Нова доріжка на вул. Городоцькій",
+    "descLabel": "Опис (необов'язково)",
+    "descPlaceholder": "Контекст, мотивація, посилання…",
+    "cancel": "Скасувати",
+    "save": "Зберегти пропозицію",
+    "saving": "Збереження…",
+    "pending": "Очікується",
+    "err": {
+      "noTitle": "Введіть назву",
+      "signIn": "Увійдіть, щоб зберегти пропозиції",
+      "ml": "Сервіс ML недоступний — оцінку не буде встановлено"
+    }
+  },
+  "auth": {
+    "signIn": "Увійти",
+    "createAccount": "Створити акаунт",
+    "username": "Ім'я користувача",
+    "email": "Email",
+    "password": "Пароль",
+    "usernamePlaceholder": "ваш_нікнейм",
+    "emailPlaceholder": "ви@example.com",
+    "close": "Закрити",
+    "wait": "Зачекайте…",
+    "signedIn": "Ви увійшли!",
+    "accountCreated": "Акаунт створено — перевірте email для підтвердження.",
+    "noAccount": "Немає акаунту?",
+    "hasAccount": "Вже є акаунт?",
+    "register": "Зареєструватися"
+  },
+  "map": {
+    "accident": "ДТП",
+    "bikeLane": "Велодоріжка",
+    "proposal": "Пропозиція",
+    "severity": {
+      "1": "Незначне",
+      "2": "Серйозне",
+      "3": "Смертельне"
+    },
+    "date": "Дата",
+    "road": "Дорога",
+    "weather": "Погода",
+    "lighting": "Освітлення",
+    "type": "Тип",
+    "surface": "Покриття",
+    "safetyScore": "Оцінка безпеки",
+    "status": "Статус",
+    "pending": "Очікується"
+  },
+  "lang": {
+    "switch": "EN"
+  }
+}

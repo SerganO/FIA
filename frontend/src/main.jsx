@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import 'leaflet/dist/leaflet.css'
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css'
 import './App.css'
+import './i18n'
 import App from './App'
 
 ReactDOM.createRoot(document.getElementById('root')).render(

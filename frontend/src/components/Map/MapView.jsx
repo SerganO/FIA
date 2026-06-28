@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import i18n from '../../i18n'
 import { TrafficLayer } from './TrafficLayer'
 
 // Fix Leaflet's default icon paths broken by Vite's asset bundling.
@@ -17,7 +18,8 @@ L.Icon.Default.mergeOptions({
 
 // ── Severity colour map ───────────────────────────────────────────────────────
 const SEVERITY_COLOR = { 1: '#facc15', 2: '#f97316', 3: '#ef4444' }
-const SEVERITY_LABEL = { 1: 'Minor', 2: 'Serious', 3: 'Fatal' }
+
+const t = (...args) => i18n.t(...args)
 
 function accidentStyle(feature) {
   return {
@@ -33,11 +35,11 @@ function accidentStyle(feature) {
 function accidentOnEach(feature, layer) {
   const p = feature.properties
   layer.bindPopup(`
-    <strong>${SEVERITY_LABEL[p.severity] ?? 'Accident'}</strong><br/>
-    ${p.accident_date ? `Date: ${p.accident_date}<br/>` : ''}
-    ${p.road_type     ? `Road: ${p.road_type}<br/>` : ''}
-    ${p.weather       ? `Weather: ${p.weather}<br/>` : ''}
-    ${p.light_cond    ? `Lighting: ${p.light_cond}` : ''}
+    <strong>${t(`map.severity.${p.severity}`) ?? t('map.accident')}</strong><br/>
+    ${p.accident_date ? `${t('map.date')}: ${p.accident_date}<br/>` : ''}
+    ${p.road_type     ? `${t('map.road')}: ${p.road_type}<br/>` : ''}
+    ${p.weather       ? `${t('map.weather')}: ${p.weather}<br/>` : ''}
+    ${p.light_cond    ? `${t('map.lighting')}: ${p.light_cond}` : ''}
   `)
 }
 
@@ -48,9 +50,9 @@ function bikeLaneStyle() {
 function bikeLaneOnEach(feature, layer) {
   const p = feature.properties
   layer.bindPopup(`
-    <strong>${p.name ?? 'Bike Lane'}</strong><br/>
-    ${p.lane_type ? `Type: ${p.lane_type}<br/>` : ''}
-    ${p.surface   ? `Surface: ${p.surface}` : ''}
+    <strong>${p.name ?? t('map.bikeLane')}</strong><br/>
+    ${p.lane_type ? `${t('map.type')}: ${p.lane_type}<br/>` : ''}
+    ${p.surface   ? `${t('map.surface')}: ${p.surface}` : ''}
   `)
 }
 
@@ -62,11 +64,11 @@ function proposalStyle(feature) {
 
 function proposalOnEach(feature, layer) {
   const p = feature.properties
-  const score = p.safety_score != null ? `${p.safety_score}/100` : 'Pending'
+  const score = p.safety_score != null ? `${p.safety_score}/100` : t('map.pending')
   layer.bindPopup(`
-    <strong>${p.title ?? 'Proposal'}</strong><br/>
-    Safety score: <strong>${score}</strong><br/>
-    Status: ${p.status}<br/>
+    <strong>${p.title ?? t('map.proposal')}</strong><br/>
+    ${t('map.safetyScore')}: <strong>${score}</strong><br/>
+    ${t('map.status')}: ${p.status}<br/>
     👍 ${p.upvotes ?? 0}  👎 ${p.downvotes ?? 0}
   `)
 }

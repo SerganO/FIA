@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { MapView }    from './components/Map/MapView'
 import { LoginModal } from './components/Auth/LoginModal'
 import { RoleGuard }  from './components/Auth/RoleGuard'
@@ -16,11 +17,12 @@ const ROLE_COLORS = {
 }
 
 function LayerControls({ layers, onToggle, filterOpen, onFilterToggle, filterPanelProps }) {
+  const { t } = useTranslation()
   const items = [
-    { key: 'accidents',  label: 'Accidents',    dot: '#ef4444', filterable: true },
-    { key: 'bikeLanes',  label: 'Bike Lanes',   dot: '#22c55e' },
-    { key: 'proposals',  label: 'Proposals',    dot: '#3b82f6' },
-    { key: 'traffic',    label: 'Live Traffic', dot: '#f97316' },
+    { key: 'accidents',  label: t('layer.accidents'),  dot: '#ef4444', filterable: true },
+    { key: 'bikeLanes',  label: t('layer.bikeLanes'),  dot: '#22c55e' },
+    { key: 'proposals',  label: t('layer.proposals'),  dot: '#3b82f6' },
+    { key: 'traffic',    label: t('layer.traffic'),    dot: '#f97316' },
   ]
   return (
     <div className="map-controls">
@@ -38,7 +40,7 @@ function LayerControls({ layers, onToggle, filterOpen, onFilterToggle, filterPan
               <button
                 className={`layer-filter-chevron${filterOpen ? ' open' : ''}`}
                 onClick={onFilterToggle}
-                title="Filter accidents"
+                title={t('filter.tooltip')}
               >
                 ▾
               </button>
@@ -61,16 +63,17 @@ const toDateStr = ms => new Date(ms).toISOString().slice(0, 10)
 const toMs      = str => new Date(str).getTime()
 
 function AccidentFilterPanel({ dataDateRange, dateRange, onDateRange, decayRate, onDecayRate }) {
+  const { t } = useTranslation()
   const [dataMin, dataMax] = dataDateRange
   const [selMin,  selMax]  = dateRange
   if (!dataMin || !dataMax) return null
 
   return (
     <div className="accident-filter-panel">
-      <div className="afp-title">Accident Filters</div>
+      <div className="afp-title">{t('filter.title')}</div>
 
       <div className="afp-row">
-        <span className="afp-label">Date range</span>
+        <span className="afp-label">{t('filter.dateRange')}</span>
         <div className="afp-dates">
           <input
             type="date"
@@ -92,7 +95,7 @@ function AccidentFilterPanel({ dataDateRange, dateRange, onDateRange, decayRate,
 
       <div className="afp-row">
         <div className="afp-label-row">
-          <span className="afp-label">Fade rate</span>
+          <span className="afp-label">{t('filter.fadeRate')}</span>
           <span className="afp-value">{decayRate.toFixed(1)}</span>
         </div>
         <input
@@ -103,8 +106,8 @@ function AccidentFilterPanel({ dataDateRange, dateRange, onDateRange, decayRate,
           onChange={e => onDecayRate(parseFloat(e.target.value))}
         />
         <div className="afp-slider-labels">
-          <span>Gradual</span>
-          <span>Sharp</span>
+          <span>{t('filter.gradual')}</span>
+          <span>{t('filter.sharp')}</span>
         </div>
       </div>
     </div>
@@ -112,6 +115,7 @@ function AccidentFilterPanel({ dataDateRange, dateRange, onDateRange, decayRate,
 }
 
 function ProposalModal({ geometry, onSave, onClose }) {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [title, setTitle]       = useState('')
   const [desc, setDesc]         = useState('')
@@ -123,13 +127,13 @@ function ProposalModal({ geometry, onSave, onClose }) {
     setLoading(true)
     predictSafety(geometry)
       .then(data => setScore(data))
-      .catch(() => toast.error('ML service unavailable — score will be null'))
+      .catch(() => toast.error(t('proposal.err.ml')))
       .finally(() => setLoading(false))
-  }, [geometry])
+  }, [geometry, t])
 
   async function handleSave() {
-    if (!title.trim()) { toast.error('Please enter a title'); return }
-    if (!supabase || !user) { toast.error('Sign in to save proposals'); return }
+    if (!title.trim()) { toast.error(t('proposal.err.noTitle')); return }
+    if (!supabase || !user) { toast.error(t('proposal.err.signIn')); return }
     setSaving(true)
     try {
       const { error } = await supabase.from('proposals').insert({
@@ -142,7 +146,7 @@ function ProposalModal({ geometry, onSave, onClose }) {
         ml_features:  score?.features ?? null,
       })
       if (error) throw error
-      toast.success('Proposal saved!')
+      toast.success(t('proposal.heading') + ' — OK')
       onSave()
       onClose()
     } catch (err) {
@@ -159,9 +163,8 @@ function ProposalModal({ geometry, onSave, onClose }) {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ position: 'relative', width: 420 }}>
         <button className="modal-close" onClick={onClose}>×</button>
-        <h2>New Bike Lane Proposal</h2>
+        <h2>{t('proposal.heading')}</h2>
 
-        {/* Safety score section */}
         <div style={{
           background: 'var(--color-bg)',
           borderRadius: 'var(--radius)',
@@ -171,7 +174,7 @@ function ProposalModal({ geometry, onSave, onClose }) {
         }}>
           {loading ? (
             <p style={{ color: 'var(--color-muted)', fontSize: '.9rem' }}>
-              Calculating safety score…
+              {t('proposal.calculating')}
             </p>
           ) : score ? (
             <>
@@ -184,31 +187,31 @@ function ProposalModal({ geometry, onSave, onClose }) {
                 {score.recommendation}
               </p>
               <div style={{ marginTop: 8, fontSize: '.75rem', color: 'var(--color-muted)', display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <span>Accidents 100m: <strong>{score.features?.accidents_within_100m}</strong></span>
-                <span>Length: <strong>{Math.round(score.features?.length_m ?? 0)}m</strong></span>
-                <span>Nearest lane: <strong>{Math.round(score.features?.nearest_bike_lane_m ?? 0)}m</strong></span>
+                <span>{t('proposal.accidents100m')}: <strong>{score.features?.accidents_within_100m}</strong></span>
+                <span>{t('proposal.length')}: <strong>{Math.round(score.features?.length_m ?? 0)}м</strong></span>
+                <span>{t('proposal.nearestLane')}: <strong>{Math.round(score.features?.nearest_bike_lane_m ?? 0)}м</strong></span>
               </div>
             </>
           ) : (
             <p style={{ color: 'var(--color-muted)', fontSize: '.85rem' }}>
-              Score unavailable — the proposal will be saved without an ML score.
+              {t('proposal.scoreUnavailable')}
             </p>
           )}
         </div>
 
         <div className="form-group">
-          <label>Title *</label>
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. New lane on High Street" />
+          <label>{t('proposal.titleLabel')}</label>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('proposal.titlePlaceholder')} />
         </div>
         <div className="form-group">
-          <label>Description (optional)</label>
-          <textarea rows={3} value={desc} onChange={e => setDesc(e.target.value)} placeholder="Context, motivation, references…" style={{ resize: 'vertical' }} />
+          <label>{t('proposal.descLabel')}</label>
+          <textarea rows={3} value={desc} onChange={e => setDesc(e.target.value)} placeholder={t('proposal.descPlaceholder')} style={{ resize: 'vertical' }} />
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>Cancel</button>
+          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>{t('proposal.cancel')}</button>
           <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSave} disabled={saving || loading}>
-            {saving ? 'Saving…' : 'Save Proposal'}
+            {saving ? t('proposal.saving') : t('proposal.save')}
           </button>
         </div>
       </div>
@@ -217,6 +220,7 @@ function ProposalModal({ geometry, onSave, onClose }) {
 }
 
 export default function App() {
+  const { t, i18n } = useTranslation()
   const auth = useAuth()
   const { accidents, bikeLanes, proposals, loading, refreshProposals } = useMapData()
 
@@ -294,29 +298,37 @@ export default function App() {
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="app-header">
-        <span className="logo">🚲 CycloSafe</span>
+        <span className="logo">{t('app.title')}</span>
 
         <RoleGuard minRole="user">
           <span
             className={`role-badge ${ROLE_COLORS[auth.role] ?? 'role-guest'}`}
-            title="Your access level"
+            title={t(`role.${auth.role}`)}
           >
-            {auth.role.replace('_', ' ')}
+            {t(`role.${auth.role}`)}
           </span>
         </RoleGuard>
 
         <div className="header-spacer" />
+
+        <button
+          className="btn btn-ghost"
+          style={{ fontSize: '.8rem', padding: '4px 10px' }}
+          onClick={() => i18n.changeLanguage(i18n.language === 'uk' ? 'en' : 'uk')}
+        >
+          {t('lang.switch')}
+        </button>
 
         {auth.isAuthenticated ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: '.85rem', color: 'var(--color-muted)' }}>
               {auth.profile?.username ?? auth.user?.email}
             </span>
-            <button className="btn btn-ghost" onClick={auth.signOut}>Sign Out</button>
+            <button className="btn btn-ghost" onClick={auth.signOut}>{t('app.signOut')}</button>
           </div>
         ) : (
           <button className="btn btn-primary" onClick={() => setShowLogin(true)}>
-            Sign In
+            {t('app.signIn')}
           </button>
         )}
       </header>
@@ -324,7 +336,7 @@ export default function App() {
       {/* ── Map ────────────────────────────────────────────────────────────── */}
       <main className="app-main">
         <div className="map-container">
-          {loading && <div className="map-loading">Loading map data…</div>}
+          {loading && <div className="map-loading">{t('app.loading')}</div>}
 
           <MapView
             accidents={processedAccidents}
@@ -334,7 +346,7 @@ export default function App() {
             canDraw={canDraw}
             onProposalDrawn={(geom) => {
               if (!auth.isAuthenticated) {
-                toast('Sign in to save proposals', { icon: '🔒' })
+                toast(t('proposal.err.signIn'), { icon: '🔒' })
                 setShowLogin(true)
                 return
               }
