@@ -5,6 +5,8 @@
     "signIn": "Sign In",
     "signOut": "Sign Out"
   },
+  "photo": "Photo",
+  "addPhoto": "Add Photo",
   "role": {
     "guest": "guest",
     "user": "user",
@@ -133,6 +135,7 @@
     "title":          "Report a Hazard",
     "type":           "Type",
     "description":    "Description",
+    "photo": "Photo",
     "descPlaceholder":"Describe the issue…",
     "submit":         "Submit Report",
     "submitted":      "Report submitted!",

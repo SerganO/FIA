@@ -125,12 +125,34 @@ const hazardIcon = L.divIcon({
 
 function hazardOnEach(feature, layer) {
   const p = feature.properties
-  layer.bindPopup(`
-    <strong>${t(`hazard.types.${p.report_type}`) ?? p.report_type}</strong><br/>
-    ${p.description ? `${p.description}<br/>` : ''}
-    ${t('map.status')}: ${p.status}<br/>
-    ${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}
-  `)
+  
+  const popupContent = `
+    <div style="min-width: 200px; font-family: sans-serif;">
+      <h3 style="margin: 0 0 8px 0; font-size: 16px;">
+        ⚠️ ${t(`hazard.types.${p.report_type}`) ?? p.report_type}
+      </h3>
+      
+      ${p.description ? `<p style="margin: 0 0 8px 0; font-size: 14px; color: #555;">${p.description}</p>` : ''}
+      
+      <div style="margin-bottom: 12px; font-size: 13px;">
+        <strong>${t('map.status')}:</strong> ${p.status}<br/>
+        <strong>📅</strong> ${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}
+      </div>
+      ${p.photo_url 
+        ? `<img 
+            src="${p.photo_url}" 
+            alt="Hazard photo" 
+            style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;" 
+           />` 
+        : ``
+      }
+    </div>
+  `
+
+  layer.bindPopup(popupContent, {
+    maxWidth: 300,
+    className: 'custom-hazard-popup'
+  })
 }
 
 // Fires onMapClick when the map canvas itself is clicked (not a marker/feature).
