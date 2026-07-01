@@ -154,8 +154,8 @@ Hazard reports have a lifecycle: `open` → `acknowledged` → `resolved` (manag
 |---|---|
 | `guest` | Read-only; can view map, proposals, and comments |
 | `user` | Can draw proposals, vote, comment, report hazards |
-| `city_official` | Same as user; reserved for future official review workflow |
-| `admin` | Full access including admin panel |
+| `city_official` | Same as user; can review proposals and update hazard status |
+| `admin` | Full access including admin panel and user role management |
 
 ---
 
@@ -360,14 +360,15 @@ Edit `.env`:
 ```
 SUPABASE_URL=https://<your-project-ref>.supabase.co
 SUPABASE_SERVICE_KEY=<service_role key from Supabase → Settings → API>
+SUPABASE_JWT_SECRET=<JWT secret from Supabase → Settings → API>
 ```
 
-> Use the **service_role** key (not the anon key) — the backend needs unrestricted DB access for ML training and bulk imports.
+> Use the **service_role** key (not the anon key) — the backend needs unrestricted DB access for ML training and bulk imports. The **JWT secret** is required to verify user tokens on protected admin API endpoints (`/api/retrain`, `/api/import/*`, etc.).
 
 ```bash
 python -m venv .venv
 # Windows
-.venv\Scripts\activate
+`.venv\Scripts\activate`
 # macOS / Linux
 source .venv/bin/activate
 
@@ -443,6 +444,6 @@ Project/
 
 ## Deploy
 
-**Backend** — ships a `render.yaml`. Push the repo and connect to [Render](https://render.com). Set `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` in the Render environment variables dashboard.
+**Backend** — ships a `render.yaml`. Push the repo and connect to [Render](https://render.com). Set `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, and `SUPABASE_JWT_SECRET` in the Render environment variables dashboard.
 
 **Frontend** — deploy to Vercel or Netlify. Set the four `VITE_*` environment variables in the hosting dashboard.

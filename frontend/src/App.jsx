@@ -6,10 +6,12 @@ import { LoginModal }       from './components/Auth/LoginModal'
 import { RoleGuard }        from './components/Auth/RoleGuard'
 import { HazardReportForm } from './components/Reports/HazardReportForm'
 import { ProposalsPage }    from './pages/ProposalsPage'
+import { HazardsPage }      from './pages/HazardsPage'
 import { AdminPage }        from './pages/AdminPage'
 import { useAuth }    from './hooks/useAuth'
 import { useMapData } from './hooks/useMapData'
 import { predictSafety, prewarmBackend } from './lib/apiClient'
+import { activeHazardsOnly } from './lib/geojson'
 import { supabase } from './lib/supabaseClient'
 
 const ROLE_COLORS = {
@@ -82,6 +84,68 @@ function BikeInfraControl({ layers, onToggle }) {
   )
 }
 
+function ProposalsLayerControl({ layers, onToggle }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  const anyActive = layers.proposalsCommunity || layers.proposalsOfficial
+
+  useEffect(() => {
+    if (!open) return
+    function handleOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [open])
+
+  function toggleAll() {
+    const next = !anyActive
+    ;['proposalsCommunity', 'proposalsOfficial'].forEach(key => {
+      if (!!layers[key] !== next) onToggle(key)
+    })
+  }
+
+  return (
+    <div ref={ref}>
+      <div className="layer-toggle-row">
+        <button
+          className={`layer-toggle split-left${anyActive ? ' active' : ''}`}
+          onClick={toggleAll}
+        >
+          <span className="layer-dot" style={{ background: '#3b82f6' }} />
+          {t('layer.proposals')}
+        </button>
+        <button
+          className={`layer-filter-chevron${open ? ' open' : ''}`}
+          onClick={() => setOpen(p => !p)}
+        >
+          ▾
+        </button>
+      </div>
+      {open && (
+        <div className="infra-dropdown">
+          {[
+            { key: 'proposalsCommunity', label: t('layer.proposalsCommunity'), dot: '#3b82f6' },
+            { key: 'proposalsOfficial',  label: t('layer.proposalsOfficial'),  dot: '#7c3aed' },
+          ].map(({ key, label, dot }) => (
+            <label key={key} className="infra-checkbox-row">
+              <input
+                type="checkbox"
+                checked={!!layers[key]}
+                onChange={() => onToggle(key)}
+              />
+              <span className="layer-dot" style={{ background: dot }} />
+              {label}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function LayerControls({ layers, onToggle, filterOpen, onFilterToggle, filterPanelProps }) {
   const { t } = useTranslation()
 
@@ -131,9 +195,10 @@ function LayerControls({ layers, onToggle, filterOpen, onFilterToggle, filterPan
       {/* Bicycle infrastructure group */}
       <BikeInfraControl layers={layers} onToggle={onToggle} />
 
+      <ProposalsLayerControl layers={layers} onToggle={onToggle} />
+
       {/* Remaining single-toggle layers */}
       {[
-        { key: 'proposals',     label: t('layer.proposals'),     dot: '#3b82f6' },
         { key: 'hazardReports', label: t('layer.hazardReports'), dot: '#f97316' },
         { key: 'traffic',       label: t('layer.traffic'),       dot: '#94a3b8' },
       ].map(renderSimpleItem)}
@@ -202,7 +267,7 @@ function AccidentFilterPanel({ dataDateRange, dateRange, onDateRange, decayRate,
 
 function ProposalModal({ geometry, onSave, onClose }) {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const [title, setTitle]       = useState('')
   const [desc, setDesc]         = useState('')
   const [score, setScore]       = useState(null)
@@ -217,7 +282,7 @@ function ProposalModal({ geometry, onSave, onClose }) {
       .finally(() => setLoading(false))
   }, [geometry, t])
 
-  async function handleSave() {
+  async function handleSave(submitForReview = false) {
     if (!title.trim()) { toast.error(t('proposal.err.noTitle')); return }
     if (!supabase || !user) { toast.error(t('proposal.err.signIn')); return }
     setSaving(true)
@@ -227,12 +292,13 @@ function ProposalModal({ geometry, onSave, onClose }) {
         title:        title.trim(),
         description:  desc.trim() || null,
         proposed_by:  user.id,
+        status:       submitForReview ? 'new' : 'draft',
         safety_score: score?.safety_score ?? null,
         ml_version:   score?.model_version ?? null,
         ml_features:  score?.features ?? null,
       })
       if (error) throw error
-      toast.success(t('proposal.heading') + ' — OK')
+      toast.success(submitForReview ? t('review.submitted') : t('proposal.savedDraft'))
       onSave()
       onClose()
     } catch (err) {
@@ -244,12 +310,16 @@ function ProposalModal({ geometry, onSave, onClose }) {
 
   const priority = score?.risk_level
   const safetyClass = priority ? `priority-${priority}` : 'priority-medium'
+  const isOfficialProposal = role === 'city_official' || role === 'admin'
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ position: 'relative', width: 420 }}>
         <button className="modal-close" onClick={onClose}>×</button>
         <h2>{t('proposal.heading')}</h2>
+        {isOfficialProposal && (
+          <p className="proposal-source-hint">{t('proposal.officialHint')}</p>
+        )}
 
         <div style={{
           background: 'var(--color-bg)',
@@ -294,10 +364,13 @@ function ProposalModal({ geometry, onSave, onClose }) {
           <textarea rows={3} value={desc} onChange={e => setDesc(e.target.value)} placeholder={t('proposal.descPlaceholder')} style={{ resize: 'vertical' }} />
         </div>
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>{t('proposal.cancel')}</button>
-          <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSave} disabled={saving || loading}>
-            {saving ? t('proposal.saving') : t('proposal.save')}
+        <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+          <button className="btn btn-ghost" style={{ flex: 1, minWidth: 100 }} onClick={onClose}>{t('proposal.cancel')}</button>
+          <button className="btn btn-ghost" style={{ flex: 1, minWidth: 100 }} onClick={() => handleSave(false)} disabled={saving || loading}>
+            {saving ? t('proposal.saving') : t('proposal.saveDraft')}
+          </button>
+          <button className="btn btn-primary" style={{ flex: 1, minWidth: 100 }} onClick={() => handleSave(true)} disabled={saving || loading}>
+            {saving ? t('proposal.saving') : t('review.submitForReview')}
           </button>
         </div>
       </div>
@@ -310,19 +383,20 @@ export default function App() {
   const auth = useAuth()
   const { accidents, bikeLanes, bikeParking, bikeRental, proposals, hazardReports, loading, refreshAccidents, refreshBikeLanes, refreshBikeParking, refreshBikeRental, refreshProposals, refreshHazardReports } = useMapData()
 
-  const [view,           setView]          = useState('map')   // 'map' | 'proposals' | 'admin'
+  const [view,           setView]          = useState('map')   // 'map' | 'proposals' | 'hazards' | 'admin'
   const [showLogin,      setShowLogin]     = useState(false)
   const [drawnGeom,      setDrawnGeom]     = useState(null)
   const [hazardLatLng,   setHazardLatLng]  = useState(null)   // map click target for hazard form
   const [mapFlyTo,       setMapFlyTo]      = useState(null)   // [lat, lng] to fly to
   const [layers, setLayers] = useState({
-    accidents:     true,
-    bikeLanes:     true,
-    bikeParking:   true,
-    bikeRental:    true,
-    proposals:     true,
-    traffic:       false,
-    hazardReports: true,
+    accidents:          true,
+    bikeLanes:          true,
+    bikeParking:        true,
+    bikeRental:         true,
+    proposalsCommunity: true,
+    proposalsOfficial:  true,
+    traffic:            false,
+    hazardReports:      true,
   })
 
   // ── Accident filter state ────────────────────────────────────────────────
@@ -382,7 +456,12 @@ export default function App() {
     })
   }
 
-  const canDraw = ['user', 'city_official', 'admin'].includes(auth.role)
+  const canDraw = auth.hasPermission('proposals.create')
+
+  const mapHazardReports = useMemo(
+    () => activeHazardsOnly(hazardReports),
+    [hazardReports],
+  )
 
   return (
     <div className="app">
@@ -393,12 +472,12 @@ export default function App() {
         <span className="logo">{t('app.title')}</span>
 
         <nav className="app-nav">
-          {['map', 'proposals'].map(v => (
+          {['map', 'proposals', 'hazards'].map(v => (
             <button key={v} className={`nav-tab${view === v ? ' active' : ''}`} onClick={() => setView(v)}>
               {t(`nav.${v}`)}
             </button>
           ))}
-          <RoleGuard minRole="admin">
+          <RoleGuard permission="admin.ml">
             <button className={`nav-tab${view === 'admin' ? ' active' : ''}`} onClick={() => setView('admin')}>
               {t('nav.admin')}
             </button>
@@ -451,7 +530,7 @@ export default function App() {
             bikeParking={bikeParking}
             bikeRental={bikeRental}
             proposals={proposals}
-            hazardReports={hazardReports}
+            hazardReports={mapHazardReports}
             layers={layers}
             canDraw={canDraw}
             flyTo={mapFlyTo}
@@ -467,6 +546,7 @@ export default function App() {
               if (!auth.isAuthenticated) return
               setHazardLatLng(latlng)
             }}
+            onHazardUpdated={refreshHazardReports}
           />
 
           <div className="map-controls-wrapper">
@@ -499,15 +579,35 @@ export default function App() {
               setView('map')
             }}
             onDelete={refreshProposals}
+            onUpdated={refreshProposals}
+            onRefresh={refreshProposals}
+          />
+        )}
+
+        {/* Hazards list view */}
+        {view === 'hazards' && (
+          <HazardsPage
+            hazardReports={hazardReports}
+            onViewOnMap={(hazard) => {
+              const [lng, lat] = hazard.geometry?.coordinates ?? []
+              if (lat != null && lng != null) setMapFlyTo([lat, lng])
+              setView('map')
+            }}
+            onUpdated={refreshHazardReports}
+            onRefresh={refreshHazardReports}
           />
         )}
 
         {/* Admin view */}
         {view === 'admin' && (
-          <AdminPage
-            onImportAccidents={refreshAccidents}
-            onImportBikeLanes={() => { refreshBikeLanes(); refreshBikeParking(); refreshBikeRental() }}
-          />
+          <RoleGuard permission="admin.ml" fallback={
+            <div className="admin-denied" style={{ padding: 24 }}>{t('admin.denied')}</div>
+          }>
+            <AdminPage
+              onImportAccidents={refreshAccidents}
+              onImportBikeLanes={() => { refreshBikeLanes(); refreshBikeParking(); refreshBikeRental() }}
+            />
+          </RoleGuard>
         )}
 
       </main>

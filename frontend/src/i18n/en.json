@@ -2,6 +2,8 @@
   "app": {
     "title": "🚲 UrbanFlow",
     "loading": "Loading map data…",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
     "signIn": "Sign In",
     "signOut": "Sign Out"
   },
@@ -20,6 +22,8 @@
     "bikeParking":   "Bike Parking",
     "bikeRental":    "Bike Rental",
     "proposals":     "Proposals",
+    "proposalsCommunity": "Community proposals",
+    "proposalsOfficial":  "Official proposals",
     "hazardReports": "Hazards",
     "traffic":       "Live Traffic"
   },
@@ -46,6 +50,9 @@
     "cancelDraw": "Cancel Drawing",
     "cancel": "Cancel",
     "save": "Save Proposal",
+    "saveDraft": "Save as draft",
+    "savedDraft": "Draft saved",
+    "officialHint": "This proposal will be saved as an official city proposal.",
     "saving": "Saving…",
     "pending": "Pending",
     "err": {
@@ -101,6 +108,7 @@
   "nav": {
     "map":       "Map",
     "proposals": "Proposals",
+    "hazards":   "Hazards",
     "admin":     "Admin"
   },
   "vote": {
@@ -124,12 +132,43 @@
       "votes": "Votes"
     },
     "empty":         "No proposals yet.",
+    "filterBy":      "Status",
+    "sourceFilterBy":"Type",
+    "filter": {
+      "all": "All"
+    },
+    "sourceLabel":   "Type",
+    "sources": {
+      "community": "Community",
+      "official":  "Official"
+    },
     "viewOnMap":     "View on map",
     "delete":        "Delete",
     "deleteConfirm": "Sure?",
     "deleteYes":     "Yes",
     "deleteNo":      "No",
-    "deleted":       "Proposal deleted"
+    "deleted":       "Proposal deleted",
+    "updated":       "Proposal updated",
+    "edit":          "Edit",
+    "saveEdit":      "Save changes",
+    "cancelEdit":    "Cancel",
+    "noDescription": "No description provided.",
+    "statusLabel":   "Status",
+    "statuses": {
+      "draft":        "Draft",
+      "new":          "New",
+      "under_review": "Under review",
+      "approved":     "Approved",
+      "rejected":     "Rejected"
+    }
+  },
+  "review": {
+    "submitForReview": "Submit for review",
+    "submitted":       "Submitted for review",
+    "approve":         "Approve",
+    "reject":          "Reject",
+    "returnToReview":  "Return to review",
+    "statusUpdated":   "Status updated"
   },
   "hazard": {
     "title":          "Report a Hazard",
@@ -140,6 +179,13 @@
     "submit":         "Submit Report",
     "submitted":      "Report submitted!",
     "clickToReport":  "Click on the map to report a hazard",
+    "statusLabel":    "Status",
+    "statusUpdated":  "Status updated",
+    "statuses": {
+      "open":         "Open",
+      "acknowledged": "Acknowledged",
+      "resolved":     "Resolved"
+    },
     "types": {
       "pothole":         "Pothole",
       "missing_signage": "Missing signage",
@@ -148,6 +194,17 @@
       "poor_lighting":   "Poor lighting",
       "other":           "Other"
     }
+  },
+  "hazards": {
+    "title":      "Hazard Reports",
+    "filterBy":   "Show",
+    "filter": {
+      "active":   "Active",
+      "all":      "All",
+      "resolved": "Resolved"
+    },
+    "empty":      "No hazard reports found.",
+    "viewOnMap":  "View on map"
   },
   "ml": {
     "recommendation": {
@@ -187,6 +244,16 @@
       "bikeParking": "Parking",
       "bikeRental":  "Rental",
       "crossings":   "Crossings (GeoJSON)"
+    },
+    "users": {
+      "title":           "User Management",
+      "hint":            "Assign roles to registered users.",
+      "username":        "Username",
+      "role":            "Role",
+      "joined":          "Joined",
+      "save":            "Save",
+      "roleUpdated":     "Role updated",
+      "cannotDemoteSelf":"You cannot demote your own admin role"
     }
   }
 }

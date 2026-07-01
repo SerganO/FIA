@@ -1,9 +1,11 @@
 import uuid
 import threading
 import logging
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException
 from app.schemas.retrain import RetrainRequest, RetrainResponse, ModelVersionsResponse, ModelVersion
 from app.db.supabase_client import get_supabase
+from app.auth.deps import CurrentUser, require_permission
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -11,7 +13,10 @@ _lock = threading.Lock()
 
 
 @router.post("/retrain", response_model=RetrainResponse)
-async def retrain_endpoint(request: RetrainRequest):
+async def retrain_endpoint(
+    request: RetrainRequest,
+    _user: Annotated[CurrentUser, Depends(require_permission("admin.ml"))],
+):
     if not _lock.acquire(blocking=False):
         raise HTTPException(status_code=409, detail="Retraining already in progress")
 
@@ -54,7 +59,10 @@ async def get_model_versions():
 
 
 @router.post("/activate_model/{version}")
-async def activate_model_endpoint(version: str):
+async def activate_model_endpoint(
+    version: str,
+    _user: Annotated[CurrentUser, Depends(require_permission("admin.ml"))],
+):
     supabase = get_supabase()
     all_versions = supabase.rpc("get_ml_model_versions", {}).execute().data or []
     match = next((v for v in all_versions if v["version"] == version), None)

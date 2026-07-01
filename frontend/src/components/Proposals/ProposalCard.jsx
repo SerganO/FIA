@@ -4,12 +4,21 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '../../lib/supabaseClient'
 import { VoteButtons } from './VoteButtons'
 import { CommentThread } from './CommentThread'
+import { ProposalReviewActions, ProposalSubmitAction } from './ProposalReviewActions'
+import { useAuth } from '../../hooks/useAuth'
+import { DELETABLE_STATUSES } from '../../lib/proposalStatuses'
 
 const statusStyle = {
   draft:        { background: '#f1f5f9', color: '#475569' },
+  new:          { background: '#e0e7ff', color: '#3730a3' },
   under_review: { background: '#fef9c3', color: '#a16207' },
   approved:     { background: '#dcfce7', color: '#15803d' },
   rejected:     { background: '#fee2e2', color: '#b91c1c' },
+}
+
+const sourceStyle = {
+  community: { background: '#dbeafe', color: '#1e40af' },
+  official:  { background: '#ede9fe', color: '#5b21b6' },
 }
 
 function priorityClass(score) {
@@ -19,14 +28,61 @@ function priorityClass(score) {
   return 'priority-low'
 }
 
-export function ProposalCard({ proposal, onViewOnMap, userId, userRole, onDelete }) {
+export function ProposalCard({ proposal, onViewOnMap, userId, userRole, onDelete, onUpdated }) {
   const { t } = useTranslation()
+  const { hasPermission } = useAuth()
   const [showComments,  setShowComments]  = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting,      setDeleting]      = useState(false)
+  const [editing,       setEditing]       = useState(false)
+  const [editTitle,     setEditTitle]     = useState('')
+  const [editDesc,      setEditDesc]      = useState('')
+  const [saving,        setSaving]        = useState(false)
   const p = proposal.properties ?? proposal
 
-  const canDelete = p.id && (p.proposed_by === userId || userRole === 'admin')
+  const canEditDraft = p.status === 'draft' && p.proposed_by === userId
+
+  const canDelete = p.id && (
+    (p.proposed_by === userId && hasPermission('proposals.delete.own') && DELETABLE_STATUSES.includes(p.status))
+    || hasPermission('proposals.delete.any')
+  )
+
+  function startEditing() {
+    setEditTitle(p.title ?? '')
+    setEditDesc(p.description ?? '')
+    setEditing(true)
+  }
+
+  function cancelEditing() {
+    setEditing(false)
+    setEditTitle('')
+    setEditDesc('')
+  }
+
+  async function handleSaveEdit() {
+    if (!editTitle.trim()) {
+      toast.error(t('proposal.err.noTitle'))
+      return
+    }
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('proposals')
+        .update({
+          title: editTitle.trim(),
+          description: editDesc.trim() || null,
+        })
+        .eq('id', p.id)
+      if (error) throw error
+      toast.success(t('proposals.updated'))
+      setEditing(false)
+      onUpdated?.()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   async function handleDelete() {
     setDeleting(true)
@@ -47,8 +103,17 @@ export function ProposalCard({ proposal, onViewOnMap, userId, userRole, onDelete
     <div className="proposal-card">
       <div className="proposal-card-top">
         <div className="proposal-card-title-row">
-          <h3 className="proposal-card-title">{p.title}</h3>
-          {p.safety_score != null && (
+          {editing ? (
+            <input
+              className="proposal-card-edit-title"
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              placeholder={t('proposal.titlePlaceholder')}
+            />
+          ) : (
+            <h3 className="proposal-card-title">{p.title}</h3>
+          )}
+          {!editing && p.safety_score != null && (
             <span className={`safety-badge ${priorityClass(p.safety_score)}`} style={{ fontSize: '.72rem' }}>
               {p.safety_score}/100
             </span>
@@ -56,8 +121,14 @@ export function ProposalCard({ proposal, onViewOnMap, userId, userRole, onDelete
         </div>
 
         <div className="proposal-card-meta">
+          <span
+            className="proposal-status-badge"
+            style={sourceStyle[p.source ?? 'community'] ?? sourceStyle.community}
+          >
+            {t(`proposals.sources.${p.source ?? 'community'}`) ?? p.source}
+          </span>
           <span className="proposal-status-badge" style={statusStyle[p.status] ?? statusStyle.draft}>
-            {p.status}
+            {t(`proposals.statuses.${p.status}`) ?? p.status}
           </span>
           {p.length_m != null && (
             <span className="proposal-meta-chip">{Math.round(p.length_m)}m</span>
@@ -70,7 +141,70 @@ export function ProposalCard({ proposal, onViewOnMap, userId, userRole, onDelete
         </div>
       </div>
 
-      {p.description && <p className="proposal-card-desc">{p.description}</p>}
+      <div className="proposal-card-desc-block">
+        <span className="proposal-card-desc-label">{t('proposal.descLabel')}</span>
+        {editing ? (
+          <textarea
+            className="proposal-card-edit-desc"
+            rows={3}
+            value={editDesc}
+            onChange={e => setEditDesc(e.target.value)}
+            placeholder={t('proposal.descPlaceholder')}
+          />
+        ) : (
+          <p className="proposal-card-desc">
+            {p.description?.trim() ? p.description : t('proposals.noDescription')}
+          </p>
+        )}
+      </div>
+
+      {canEditDraft && (
+        <div className="proposal-edit-actions">
+          {editing ? (
+            <>
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: '.75rem', padding: '4px 10px' }}
+                disabled={saving}
+                onClick={handleSaveEdit}
+              >
+                {saving ? t('proposal.saving') : t('proposals.saveEdit')}
+              </button>
+              <button
+                className="btn btn-ghost"
+                style={{ fontSize: '.75rem', padding: '4px 10px' }}
+                disabled={saving}
+                onClick={cancelEditing}
+              >
+                {t('proposals.cancelEdit')}
+              </button>
+            </>
+          ) : (
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: '.75rem', padding: '4px 10px' }}
+              onClick={startEditing}
+            >
+              ✏ {t('proposals.edit')}
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="proposal-review-row">
+        <ProposalSubmitAction
+          proposalId={p.id}
+          status={p.status}
+          userId={userId}
+          proposedBy={p.proposed_by}
+          onUpdated={onUpdated}
+        />
+        <ProposalReviewActions
+          proposalId={p.id}
+          status={p.status}
+          onUpdated={onUpdated}
+        />
+      </div>
 
       <div className="proposal-card-footer">
         <VoteButtons proposalId={p.id} upvotes={p.upvotes ?? 0} downvotes={p.downvotes ?? 0} />

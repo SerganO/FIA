@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { hasRole, hasPermission as checkPermission } from '../lib/permissions'
 
 export function useAuth() {
   const [session, setSession]   = useState(null)
@@ -61,13 +62,17 @@ export function useAuth() {
     await supabase.auth.signOut()
   }, [])
 
+  const role = profile?.role ?? 'guest'
+
   return {
     session,
     profile,
     loading,
     user: session?.user ?? null,
-    role: profile?.role ?? 'guest',
+    role,
     isAuthenticated: !!session,
+    hasRole: (minRole) => hasRole(role, minRole),
+    hasPermission: (permission) => checkPermission(role, permission),
     signIn,
     signUp,
     signOut,

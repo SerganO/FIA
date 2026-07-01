@@ -2,6 +2,8 @@
   "app": {
     "title": "🚲 UrbanFlow",
     "loading": "Завантаження даних карти…",
+    "refresh": "Оновити",
+    "refreshing": "Оновлення…",
     "signIn": "Увійти",
     "signOut": "Вийти"
   },
@@ -20,6 +22,8 @@
     "bikeParking":   "Велопаркінги",
     "bikeRental":    "Прокат велосипедів",
     "proposals":     "Пропозиції",
+    "proposalsCommunity": "Громадські пропозиції",
+    "proposalsOfficial":  "Офіційні пропозиції",
     "hazardReports": "Небезпеки",
     "traffic":       "Трафік (Live)"
   },
@@ -46,6 +50,9 @@
     "cancelDraw": "Скасувати малювання",
     "cancel": "Скасувати",
     "save": "Зберегти пропозицію",
+    "saveDraft": "Зберегти чернетку",
+    "savedDraft": "Чернетку збережено",
+    "officialHint": "Пропозицію буде збережено як офіційну міську пропозицію.",
     "saving": "Збереження…",
     "pending": "Очікується",
     "err": {
@@ -101,6 +108,7 @@
   "nav": {
     "map":       "Карта",
     "proposals": "Пропозиції",
+    "hazards":   "Небезпеки",
     "admin":     "Адмін"
   },
   "vote": {
@@ -124,12 +132,43 @@
       "votes": "Голосами"
     },
     "empty":         "Пропозицій поки немає.",
+    "filterBy":      "Статус",
+    "sourceFilterBy":"Тип",
+    "filter": {
+      "all": "Усі"
+    },
+    "sourceLabel":   "Тип",
+    "sources": {
+      "community": "Громадська",
+      "official":  "Офіційна"
+    },
     "viewOnMap":     "На карті",
     "delete":        "Видалити",
     "deleteConfirm": "Впевнені?",
     "deleteYes":     "Так",
     "deleteNo":      "Ні",
-    "deleted":       "Пропозицію видалено"
+    "deleted":       "Пропозицію видалено",
+    "updated":       "Пропозицію оновлено",
+    "edit":          "Редагувати",
+    "saveEdit":      "Зберегти зміни",
+    "cancelEdit":    "Скасувати",
+    "noDescription": "Опис не надано.",
+    "statusLabel":   "Статус",
+    "statuses": {
+      "draft":        "Чернетка",
+      "new":          "Нова",
+      "under_review": "На розгляді",
+      "approved":     "Схвалено",
+      "rejected":     "Відхилено"
+    }
+  },
+  "review": {
+    "submitForReview": "Подати на розгляд",
+    "submitted":       "Подано на розгляд",
+    "approve":         "Схвалити",
+    "reject":          "Відхилити",
+    "returnToReview":  "Повернути на розгляд",
+    "statusUpdated":   "Статус оновлено"
   },
   "hazard": {
     "title":          "Повідомити про небезпеку",
@@ -140,6 +179,13 @@
     "submit":         "Надіслати",
     "submitted":      "Повідомлення надіслано!",
     "clickToReport":  "Клацніть на карті, щоб повідомити про небезпеку",
+    "statusLabel":    "Статус",
+    "statusUpdated":  "Статус оновлено",
+    "statuses": {
+      "open":         "Відкрито",
+      "acknowledged": "В обробці",
+      "resolved":     "Вирішено"
+    },
     "types": {
       "pothole":         "Яма",
       "missing_signage": "Відсутні знаки",
@@ -148,6 +194,17 @@
       "poor_lighting":   "Погане освітлення",
       "other":           "Інше"
     }
+  },
+  "hazards": {
+    "title":      "Повідомлення про небезпеки",
+    "filterBy":   "Показати",
+    "filter": {
+      "active":   "Активні",
+      "all":      "Усі",
+      "resolved": "Вирішені"
+    },
+    "empty":      "Повідомлень про небезпеки не знайдено.",
+    "viewOnMap":  "На карті"
   },
   "ml": {
     "recommendation": {
@@ -187,6 +244,16 @@
       "bikeParking": "Паркінги",
       "bikeRental":  "Прокат",
       "crossings":   "Перехрестя (GeoJSON)"
+    },
+    "users": {
+      "title":           "Керування користувачами",
+      "hint":            "Призначайте ролі зареєстрованим користувачам.",
+      "username":        "Ім'я",
+      "role":            "Роль",
+      "joined":          "Дата реєстрації",
+      "save":            "Зберегти",
+      "roleUpdated":     "Роль оновлено",
+      "cannotDemoteSelf":"Ви не можете знизити власну роль адміністратора"
     }
   }
 }

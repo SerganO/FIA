@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
+import { createRoot } from 'react-dom/client'
 import { createPortal } from 'react-dom'
 import { MapContainer, TileLayer, GeoJSON, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import '@geoman-io/leaflet-geoman-free'
 import i18n from '../../i18n'
+import { proposalsBySource } from '../../lib/geojson'
 import { TrafficLayer } from './TrafficLayer'
+import { HazardPopup } from '../Reports/HazardPopup'
 
 // Fix Leaflet's default icon paths broken by Vite's asset bundling.
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
@@ -58,20 +61,38 @@ function bikeLaneOnEach(feature, layer) {
   `)
 }
 
-function proposalStyle(feature) {
+function communityProposalStyle(feature) {
   const score = feature.properties.safety_score
-  // Blue/orange/red — never green so proposals don't look like actual bike lanes
   const color = score == null ? '#94a3b8' : score >= 70 ? '#3b82f6' : score >= 45 ? '#f97316' : '#ef4444'
   return { color, weight: 5, opacity: 0.9, dashArray: '8 4' }
+}
+
+function officialProposalStyle(feature) {
+  const score = feature.properties.safety_score
+  const color = score == null ? '#a78bfa' : score >= 70 ? '#7c3aed' : score >= 45 ? '#9333ea' : '#6d28d9'
+  return { color, weight: 6, opacity: 0.95, dashArray: '2 6' }
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 function proposalOnEach(feature, layer) {
   const p = feature.properties
   const score = p.safety_score != null ? `${p.safety_score}/100` : t('map.pending')
+  const source = p.source ?? 'community'
+  const descBlock = p.description
+    ? `<br/><em>${escapeHtml(p.description)}</em>`
+    : ''
   layer.bindPopup(`
-    <strong>${p.title ?? t('map.proposal')}</strong><br/>
+    <strong>${escapeHtml(p.title ?? t('map.proposal'))}</strong>${descBlock}<br/>
+    ${t('proposals.sourceLabel')}: ${t(`proposals.sources.${source}`) ?? source}<br/>
     ${t('map.safetyScore')}: <strong>${score}</strong><br/>
-    ${t('map.status')}: ${p.status}<br/>
+    ${t('map.status')}: ${t(`proposals.statuses.${p.status}`) ?? p.status}<br/>
     👍 ${p.upvotes ?? 0}  👎 ${p.downvotes ?? 0}
   `)
 }
@@ -123,35 +144,21 @@ const hazardIcon = L.divIcon({
   popupAnchor:[0, -12],
 })
 
-function hazardOnEach(feature, layer) {
+function hazardOnEach(feature, layer, onHazardUpdated) {
   const p = feature.properties
-  
-  const popupContent = `
-    <div style="min-width: 200px; font-family: sans-serif;">
-      <h3 style="margin: 0 0 8px 0; font-size: 16px;">
-        ⚠️ ${t(`hazard.types.${p.report_type}`) ?? p.report_type}
-      </h3>
-      
-      ${p.description ? `<p style="margin: 0 0 8px 0; font-size: 14px; color: #555;">${p.description}</p>` : ''}
-      
-      <div style="margin-bottom: 12px; font-size: 13px;">
-        <strong>${t('map.status')}:</strong> ${p.status}<br/>
-        <strong>📅</strong> ${p.created_at ? new Date(p.created_at).toLocaleDateString() : ''}
-      </div>
-      ${p.photo_url 
-        ? `<img 
-            src="${p.photo_url}" 
-            alt="Hazard photo" 
-            style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;" 
-           />` 
-        : ``
-      }
-    </div>
-  `
+  const container = document.createElement('div')
+  let root = null
 
-  layer.bindPopup(popupContent, {
-    maxWidth: 300,
-    className: 'custom-hazard-popup'
+  layer.bindPopup(container, { maxWidth: 280, minWidth: 240, className: 'custom-hazard-popup' })
+
+  layer.on('popupopen', () => {
+    root = createRoot(container)
+    root.render(<HazardPopup properties={p} onUpdated={onHazardUpdated} />)
+  })
+
+  layer.on('popupclose', () => {
+    root?.unmount()
+    root = null
   })
 }
 
@@ -172,14 +179,14 @@ function MapClickHandler({ onMapClick }) {
 function LocateOnMount({ flyTo }) {
   const map = useMap()
 
-  useEffect(() => {
-    if (!navigator.geolocation) return
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => map.flyTo([coords.latitude, coords.longitude], 14, { duration: 1.2 }),
-      () => { /* permission denied — stay on Lviv */ },
-      { timeout: 8000, maximumAge: 60000 },
-    )
-  }, [map])
+  // useEffect(() => {
+  //   if (!navigator.geolocation) return
+  //   navigator.geolocation.getCurrentPosition(
+  //     ({ coords }) => map.flyTo([coords.latitude, coords.longitude], 14, { duration: 1.2 }),
+  //     () => { /* permission denied — stay on Lviv */ },
+  //     { timeout: 8000, maximumAge: 60000 },
+  //   )
+  // }, [map])
 
   useEffect(() => {
     if (flyTo) map.flyTo(flyTo, 15, { duration: 1.0 })
@@ -268,13 +275,24 @@ export function MapView({
   onMapClick,
   canDraw,
   flyTo,
+  onHazardUpdated,
 }) {
   const accRef      = useRef()
   const blRef       = useRef()
   const parkingRef  = useRef()
   const rentalRef   = useRef()
-  const proposalRef = useRef()
+  const proposalCommunityRef = useRef()
+  const proposalOfficialRef  = useRef()
   const hazardRef   = useRef()
+
+  const communityProposals = useMemo(
+    () => proposalsBySource(proposals, 'community'),
+    [proposals],
+  )
+  const officialProposals = useMemo(
+    () => proposalsBySource(proposals, 'official'),
+    [proposals],
+  )
 
   // Re-render GeoJSON layers when data changes
   useEffect(() => {
@@ -306,11 +324,18 @@ export function MapView({
   }, [bikeRental])
 
   useEffect(() => {
-    if (proposalRef.current) {
-      proposalRef.current.clearLayers()
-      if (proposals) proposalRef.current.addData(proposals)
+    if (proposalCommunityRef.current) {
+      proposalCommunityRef.current.clearLayers()
+      if (communityProposals) proposalCommunityRef.current.addData(communityProposals)
     }
-  }, [proposals])
+  }, [communityProposals])
+
+  useEffect(() => {
+    if (proposalOfficialRef.current) {
+      proposalOfficialRef.current.clearLayers()
+      if (officialProposals) proposalOfficialRef.current.addData(officialProposals)
+    }
+  }, [officialProposals])
 
   useEffect(() => {
     if (hazardRef.current) {
@@ -380,14 +405,25 @@ export function MapView({
         />
       )}
 
-      {/* Saved proposals */}
-      {layers.proposals && proposals && (
+      {/* Community proposals */}
+      {layers.proposalsCommunity && communityProposals && (
         <GeoJSON
-          key={`pr-${JSON.stringify(proposals).length}`}
-          data={proposals}
-          style={proposalStyle}
+          key={`pr-c-${JSON.stringify(communityProposals).length}`}
+          data={communityProposals}
+          style={communityProposalStyle}
           onEachFeature={proposalOnEach}
-          ref={proposalRef}
+          ref={proposalCommunityRef}
+        />
+      )}
+
+      {/* Official proposals */}
+      {layers.proposalsOfficial && officialProposals && (
+        <GeoJSON
+          key={`pr-o-${JSON.stringify(officialProposals).length}`}
+          data={officialProposals}
+          style={officialProposalStyle}
+          onEachFeature={proposalOnEach}
+          ref={proposalOfficialRef}
         />
       )}
 
@@ -397,7 +433,7 @@ export function MapView({
           key={`hr-${JSON.stringify(hazardReports).length}`}
           data={hazardReports}
           pointToLayer={(f, ll) => L.marker(ll, { icon: hazardIcon })}
-          onEachFeature={hazardOnEach}
+          onEachFeature={(f, l) => hazardOnEach(f, l, onHazardUpdated)}
           ref={hazardRef}
         />
       )}

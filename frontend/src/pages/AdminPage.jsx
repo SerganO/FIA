@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RoleGuard } from '../components/Auth/RoleGuard'
-import { getModelVersions, triggerRetrain, activateModel, importAccidents, importBikeLanes, importCrossings } from '../lib/apiClient'
+import { getModelVersions, triggerRetrain, activateModel, importAccidents, importBikeLanes, importCrossings, api } from '../lib/apiClient'
 import toast from 'react-hot-toast'
-
-const BASE_URL = import.meta.env.VITE_FASTAPI_URL || 'http://localhost:8000'
+import { UserManagement } from '../components/Admin/UserManagement'
 
 function ImportRow({ label, accept, onImport, onRefresh }) {
   const { t } = useTranslation()
@@ -127,12 +126,22 @@ export function AdminPage({ onImportAccidents, onImportBikeLanes }) {
     }
   }
 
-  function handleExport() {
-    window.open(`${BASE_URL}/api/export_dataset`, '_blank')
+  async function handleExport() {
+    try {
+      const { data } = await api.get('/api/export_dataset', { responseType: 'blob' })
+      const url = URL.createObjectURL(data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'training_data_export.csv'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || err.message)
+    }
   }
 
   return (
-    <RoleGuard minRole="admin" fallback={
+    <RoleGuard permission="admin.ml" fallback={
       <div className="admin-denied">{t('admin.denied')}</div>
     }>
       <div className="admin-page">
@@ -214,6 +223,8 @@ export function AdminPage({ onImportAccidents, onImportBikeLanes }) {
             onImport={importCrossings}
           />
         </div>
+
+        <UserManagement />
       </div>
     </RoleGuard>
   )

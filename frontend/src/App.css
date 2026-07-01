@@ -60,6 +60,93 @@ body {
 .map-container { flex: 1; position: relative; }
 .map-container .leaflet-container { height: 100%; width: 100%; }
 
+/* ─── Hazard map popup ─────────────────────────────────────────────────────── */
+.custom-hazard-popup .leaflet-popup-content-wrapper {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.custom-hazard-popup .leaflet-popup-content {
+  margin: 12px 14px;
+  width: 240px !important;
+  max-width: 240px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.hazard-popup {
+  font-family: var(--font-sans, system-ui, sans-serif);
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.hazard-popup-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.hazard-popup-desc {
+  margin: 0 0 8px;
+  font-size: .875rem;
+  color: #555;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.hazard-popup-meta {
+  margin-bottom: 10px;
+  font-size: .8125rem;
+  line-height: 1.5;
+  color: #444;
+}
+
+.hazard-popup-photo {
+  margin-bottom: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.hazard-popup-photo img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 160px;
+  object-fit: cover;
+}
+
+.hazard-status-control {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.hazard-status-label {
+  display: block;
+  font-size: .75rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #64748b;
+}
+
+.hazard-status-select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-size: .8125rem;
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+}
+
 /* ─── Buttons ────────────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -385,9 +472,18 @@ body {
 .proposal-card-meta        { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .proposal-status-badge     { font-size: .68rem; font-weight: 600; padding: 2px 7px; border-radius: 99px; }
 .proposal-meta-chip        { font-size: .72rem; color: var(--color-muted); }
-.proposal-card-desc        { font-size: .83rem; color: var(--color-muted); margin: 0; }
+.proposal-card-desc-block  { margin: 4px 0 8px; }
+.proposal-card-desc-label  { display: block; font-size: .72rem; font-weight: 600; color: var(--color-muted); margin-bottom: 2px; }
+.proposal-card-desc        { font-size: .83rem; color: var(--color-muted); margin: 0; white-space: pre-wrap; }
+.proposal-card-desc:empty    { display: none; }
+.proposal-card-edit-title    { flex: 1; min-width: 0; font-size: .95rem; font-weight: 600; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.proposal-card-edit-desc     { width: 100%; box-sizing: border-box; font-size: .83rem; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical; font-family: inherit; }
+.proposal-edit-actions       { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .proposal-card-footer      { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .proposal-card-actions     { display: flex; gap: 4px; }
+.proposal-review-row       { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.proposal-review-actions   { flex: 1; min-width: 160px; margin-top: 0; padding-top: 0; border-top: none; }
+.proposal-source-hint      { font-size: .82rem; color: #5b21b6; background: #ede9fe; padding: 8px 10px; border-radius: 6px; margin: 0 0 12px; }
 
 /* ─── Proposals page ─────────────────────────────────────────────────────── */
 .proposals-page {
@@ -399,16 +495,31 @@ body {
 }
 .proposals-header {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 12px;
   padding: 14px 20px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   box-shadow: var(--shadow);
-  flex-wrap: wrap;
 }
+.proposals-header-controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-left: auto; }
 .proposals-title      { font-size: 1rem; font-weight: 700; margin: 0; }
-.proposals-sort       { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.page-title-row        { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.page-refresh-btn      {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font-size: .78rem;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  white-space: nowrap;
+}
+.page-refresh-btn:hover:not(:disabled)  { background: var(--color-bg); border-color: var(--color-primary); color: var(--color-primary); }
+.page-refresh-btn:disabled             { opacity: .6; cursor: not-allowed; }
+.proposals-sort       { display: flex; align-items: center; gap: 4px; }
 .proposals-sort-label { font-size: .78rem; color: var(--color-muted); white-space: nowrap; }
 .proposals-sort-btn   {
   padding: 4px 10px;
@@ -433,6 +544,111 @@ body {
   text-align: center;
   color: var(--color-muted);
   font-size: .9rem;
+}
+
+/* ─── Hazards page ───────────────────────────────────────────────────────── */
+.hazards-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+.hazards-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow);
+}
+.hazards-header-controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-left: auto; }
+.hazards-title      { font-size: 1rem; font-weight: 700; margin: 0; }
+.hazards-filter     { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.hazards-filter-label { font-size: .78rem; color: var(--color-muted); white-space: nowrap; }
+.hazards-filter-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font-size: .78rem; cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.hazards-filter-btn:hover  { background: var(--color-bg); }
+.hazards-filter-btn.active { border-color: var(--color-primary); color: var(--color-primary); }
+.hazards-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 380px));
+  gap: 12px;
+  align-content: start;
+}
+.hazards-empty {
+  grid-column: 1 / -1;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: .9rem;
+}
+
+.hazard-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hazard-card-top       { display: flex; flex-direction: column; gap: 6px; }
+.hazard-card-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; }
+.hazard-card-title     { font-size: .95rem; font-weight: 600; margin: 0; }
+.hazard-status-badge   { font-size: .68rem; font-weight: 600; padding: 2px 7px; border-radius: 99px; white-space: nowrap; }
+.hazard-meta-chip      { font-size: .72rem; color: var(--color-muted); }
+.hazard-card-desc      { font-size: .83rem; color: var(--color-muted); margin: 0; line-height: 1.4; }
+.hazard-card-photo {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  aspect-ratio: 4 / 3;
+  max-width: 100%;
+  background: #f8fafc;
+}
+.hazard-card-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hazard-card-footer {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.hazard-card-footer .hazard-status-control {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 180px;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+.hazard-card-footer .hazard-status-select {
+  max-width: 180px;
+}
+.hazard-card-map-btn {
+  font-size: .75rem;
+  padding: 4px 8px;
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 /* ─── Admin page ─────────────────────────────────────────────────────────── */

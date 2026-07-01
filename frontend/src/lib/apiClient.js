@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { supabase } from './supabaseClient'
 
 const BASE_URL = import.meta.env.VITE_FASTAPI_URL || 'http://localhost:8000'
 
@@ -6,6 +7,18 @@ export const api = axios.create({
   baseURL: BASE_URL,
   timeout: 30_000,
 })
+
+async function attachAuthHeader(config) {
+  if (supabase) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`
+    }
+  }
+  return config
+}
+
+api.interceptors.request.use(attachAuthHeader)
 
 export async function predictSafety(geojsonLineString) {
   const { data } = await api.post('/api/predict_safety', {

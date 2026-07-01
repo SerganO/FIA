@@ -1,14 +1,18 @@
 import io
 import csv
-from fastapi import APIRouter
+from typing import Annotated
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from app.db.supabase_client import get_supabase
+from app.auth.deps import CurrentUser, require_permission
 
 router = APIRouter()
 
 
 @router.get("/export_dataset")
-async def export_dataset():
+async def export_dataset(
+    _user: Annotated[CurrentUser, Depends(require_permission("admin.ml"))],
+):
     supabase = get_supabase()
     data = (
         supabase.table("accidents")

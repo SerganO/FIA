@@ -1,8 +1,10 @@
 import csv
 import io
 import json
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from app.db.supabase_client import get_supabase
+from app.auth.deps import CurrentUser, require_permission
 
 router = APIRouter()
 
@@ -45,7 +47,10 @@ def _rpc_insert(rpc_name: str, rows: list) -> tuple[int, int]:
 # ── Accidents (CSV) ────────────────────────────────────────────────────────────
 
 @router.post("/import/accidents")
-async def import_accidents(file: UploadFile = File(...)):
+async def import_accidents(
+    _user: Annotated[CurrentUser, Depends(require_permission("admin.import"))],
+    file: UploadFile = File(...),
+):
     """
     Accept a semicolon-delimited CSV with columns:
       accidentDate, latitude, longitude,
@@ -227,7 +232,10 @@ def _parse_crossing(feat: dict) -> dict | None:
 # ── Cycleway GeoJSON import (lanes + parking from one file) ───────────────────
 
 @router.post("/import/bike_lanes")
-async def import_bike_lanes(file: UploadFile = File(...)):
+async def import_bike_lanes(
+    _user: Annotated[CurrentUser, Depends(require_permission("admin.import"))],
+    file: UploadFile = File(...),
+):
     """
     Accept a GeoJSON FeatureCollection (Overpass/OSM format).
 
@@ -288,7 +296,10 @@ async def import_bike_lanes(file: UploadFile = File(...)):
 # ── Danger crossings GeoJSON import ───────────────────────────────────────────
 
 @router.post("/import/crossings")
-async def import_crossings(file: UploadFile = File(...)):
+async def import_crossings(
+    _user: Annotated[CurrentUser, Depends(require_permission("admin.import"))],
+    file: UploadFile = File(...),
+):
     """
     Accept a GeoJSON FeatureCollection (Overpass/OSM format).
 
