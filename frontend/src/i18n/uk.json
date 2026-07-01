@@ -87,6 +87,7 @@
       "3": "Смертельне"
     },
     "date": "Дата",
+    "dateTime": "Дата і час",
     "road": "Дорога",
     "weather": "Погода",
     "lighting": "Освітлення",
@@ -109,6 +110,7 @@
     "map":       "Карта",
     "proposals": "Пропозиції",
     "hazards":   "Небезпеки",
+    "accidents": "ДТП",
     "admin":     "Адмін"
   },
   "vote": {
@@ -178,7 +180,7 @@
     "descPlaceholder":"Опишіть проблему…",
     "submit":         "Надіслати",
     "submitted":      "Повідомлення надіслано!",
-    "clickToReport":  "Клацніть на карті, щоб повідомити про небезпеку",
+    "clickToReport":  "Подвійний клік на карті, щоб повідомити про небезпеку",
     "statusLabel":    "Статус",
     "statusUpdated":  "Статус оновлено",
     "statuses": {
@@ -205,6 +207,65 @@
     },
     "empty":      "Повідомлень про небезпеки не знайдено.",
     "viewOnMap":  "На карті"
+  },
+  "accident": {
+    "title":           "Повідомити про ДТП",
+    "type":            "Тип",
+    "severity":        "Тяжкість",
+    "date":            "Дата ДТП",
+    "dateTime":        "Дата і час",
+    "street":          "Вулиця",
+    "streetLoading":   "Визначення вулиці…",
+    "streetPlaceholder": "Назва вулиці (необов'язково)",
+    "description":     "Опис",
+    "photo":           "Фото",
+    "descPlaceholder": "Опишіть, що сталося…",
+    "submit":          "Надіслати",
+    "submitted":       "Повідомлення надіслано!",
+    "uploadingPhoto":  "Завантаження фото…",
+    "statusLabel":     "Статус",
+    "statusUpdated":   "Статус оновлено",
+    "reported":        "Подано",
+    "statuses": {
+      "open":         "Відкрито",
+      "acknowledged": "В обробці",
+      "resolved":     "Вирішено"
+    },
+    "types": {
+      "collision":    "Зіткнення з транспортом",
+      "fall":         "Падіння",
+      "near_miss":    "Небезпечна ситуація",
+      "dooring":      "Наїзд на відчинені двері авто",
+      "hit_and_run":  "Втеча з місця",
+      "other":        "Інше"
+    }
+  },
+  "accidents": {
+    "title":      "ДТП",
+    "filterBy":   "Показати",
+    "source":     "Джерело",
+    "sources": {
+      "crowdsourced":   "Користувач",
+      "historical":     "Історичні",
+      "lviv_open_data": "Відкриті дані",
+      "import":         "Імпорт"
+    },
+    "filter": {
+      "active":   "Активні",
+      "all":      "Усі",
+      "resolved": "Вирішені"
+    },
+    "empty":      "ДТП не знайдено.",
+    "viewOnMap":  "На карті"
+  },
+  "report": {
+    "title":          "Повідомити про проблему",
+    "mode":           "Тип повідомлення",
+    "hazard":         "Небезпека",
+    "accident":       "ДТП",
+    "submit":         "Надіслати",
+    "uploadingPhoto": "Завантаження фото…",
+    "doubleClick":    "Подвійний клік на карті, щоб повідомити"
   },
   "ml": {
     "recommendation": {

@@ -4,14 +4,16 @@ import { useTranslation } from 'react-i18next'
 import { MapView }          from './components/Map/MapView'
 import { LoginModal }       from './components/Auth/LoginModal'
 import { RoleGuard }        from './components/Auth/RoleGuard'
-import { HazardReportForm } from './components/Reports/HazardReportForm'
+import { ReportForm } from './components/Reports/ReportForm'
 import { ProposalsPage }    from './pages/ProposalsPage'
 import { HazardsPage }      from './pages/HazardsPage'
+import { AccidentsPage } from './pages/AccidentsPage'
 import { AdminPage }        from './pages/AdminPage'
 import { useAuth }    from './hooks/useAuth'
 import { useMapData } from './hooks/useMapData'
 import { predictSafety, prewarmBackend } from './lib/apiClient'
 import { activeHazardsOnly } from './lib/geojson'
+import { endOfDayMs, accidentDateExtents, parseAccidentDateMs } from './lib/dates'
 import { supabase } from './lib/supabaseClient'
 
 const ROLE_COLORS = {
@@ -383,11 +385,11 @@ export default function App() {
   const auth = useAuth()
   const { accidents, bikeLanes, bikeParking, bikeRental, proposals, hazardReports, loading, refreshAccidents, refreshBikeLanes, refreshBikeParking, refreshBikeRental, refreshProposals, refreshHazardReports } = useMapData()
 
-  const [view,           setView]          = useState('map')   // 'map' | 'proposals' | 'hazards' | 'admin'
-  const [showLogin,      setShowLogin]     = useState(false)
-  const [drawnGeom,      setDrawnGeom]     = useState(null)
-  const [hazardLatLng,   setHazardLatLng]  = useState(null)   // map click target for hazard form
-  const [mapFlyTo,       setMapFlyTo]      = useState(null)   // [lat, lng] to fly to
+  const [view,             setView]            = useState('map')   // 'map' | 'proposals' | 'hazards' | 'accidents' | 'admin'
+  const [showLogin,        setShowLogin]       = useState(false)
+  const [drawnGeom,        setDrawnGeom]       = useState(null)
+  const [reportLatLng,     setReportLatLng]    = useState(null)
+  const [mapFlyTo,         setMapFlyTo]        = useState(null)
   const [layers, setLayers] = useState({
     accidents:          true,
     bikeLanes:          true,
@@ -405,17 +407,18 @@ export default function App() {
   const [dataDateRange,     setDataDateRange]     = useState([null, null])
   const [showAccidentFilter, setShowAccidentFilter] = useState(false)
 
-  // Initialise date range once accidents data arrives
+  // Keep filter bounds in sync with accidents data (includes crowd-sourced rows).
   useEffect(() => {
-    if (!accidents?.features?.length) return
-    const times = accidents.features
-      .map(f => new Date(f.properties.accident_date).getTime())
-      .filter(n => !isNaN(n))
-    if (!times.length) return
-    const min = Math.min(...times)
-    const max = Math.max(...times)
+    const extents = accidentDateExtents(accidents?.features)
+    if (!extents) return
+
+    const { min, max } = extents
     setDataDateRange([min, max])
-    setAccidentDateRange(prev => prev[0] === null ? [min, max] : prev)
+    setAccidentDateRange(prev => {
+      if (prev[0] === null) return [min, max]
+      const [selMin, selMax] = prev
+      return [Math.min(selMin, min), Math.max(selMax, max)]
+    })
   }, [accidents])
 
   // Filter accidents by date range, then stamp _opacity onto each feature.
@@ -429,12 +432,12 @@ export default function App() {
 
     const features = accidents.features
       .filter(f => {
-        const d = new Date(f.properties.accident_date).getTime()
-        if (isNaN(d)) return true                    // keep undated rows
-        return d >= selMin && d <= selMax
+        const d = parseAccidentDateMs(f.properties.accident_date)
+        if (Number.isNaN(d)) return true
+        return d >= selMin && d <= endOfDayMs(selMax)
       })
       .map(f => {
-        const d = new Date(f.properties.accident_date).getTime()
+        const d = parseAccidentDateMs(f.properties.accident_date)
         // t = 0 (oldest in range) → 1 (newest in range)
         const t = isNaN(d) ? 0.5 : Math.max(0, Math.min(1, (d - selMin) / spanMs))
         // opacity = 0.2 + 0.8 * t^decayRate
@@ -472,7 +475,7 @@ export default function App() {
         <span className="logo">{t('app.title')}</span>
 
         <nav className="app-nav">
-          {['map', 'proposals', 'hazards'].map(v => (
+          {['map', 'proposals', 'hazards', 'accidents'].map(v => (
             <button key={v} className={`nav-tab${view === v ? ' active' : ''}`} onClick={() => setView(v)}>
               {t(`nav.${v}`)}
             </button>
@@ -542,9 +545,13 @@ export default function App() {
               }
               setDrawnGeom(geom)
             }}
-            onMapClick={(latlng) => {
-              if (!auth.isAuthenticated) return
-              setHazardLatLng(latlng)
+            onMapDoubleClick={(latlng) => {
+              if (!auth.isAuthenticated) {
+                toast(t('proposal.err.signIn'), { icon: '🔒' })
+                setShowLogin(true)
+                return
+              }
+              setReportLatLng(latlng)
             }}
             onHazardUpdated={refreshHazardReports}
           />
@@ -598,6 +605,19 @@ export default function App() {
           />
         )}
 
+        {/* Accident reports list view */}
+        {view === 'accidents' && (
+          <AccidentsPage
+            accidents={accidents}
+            onViewOnMap={(accident) => {
+              const [lng, lat] = accident.geometry?.coordinates ?? []
+              if (lat != null && lng != null) setMapFlyTo([lat, lng])
+              setView('map')
+            }}
+            onRefresh={refreshAccidents}
+          />
+        )}
+
         {/* Admin view */}
         {view === 'admin' && (
           <RoleGuard permission="admin.ml" fallback={
@@ -623,11 +643,14 @@ export default function App() {
         />
       )}
 
-      {hazardLatLng && (
-        <HazardReportForm
-          latlng={hazardLatLng}
-          onSubmit={refreshHazardReports}
-          onClose={() => setHazardLatLng(null)}
+      {reportLatLng && (
+        <ReportForm
+          latlng={reportLatLng}
+          onSubmit={(category) => {
+            if (category === 'hazard') refreshHazardReports()
+            else refreshAccidents()
+          }}
+          onClose={() => setReportLatLng(null)}
         />
       )}
     </div>

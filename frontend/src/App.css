@@ -232,6 +232,27 @@ body {
   flex-direction: column;
   gap: 6px;
 }
+.report-type-toggle {
+  display: flex;
+  gap: 6px;
+}
+.report-type-btn {
+  flex: 1;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: .82rem;
+  cursor: pointer;
+  color: var(--color-text);
+  transition: background .15s, border-color .15s, color .15s;
+}
+.report-type-btn:hover { background: #f1f5f9; }
+.report-type-btn.active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: #eff6ff;
+}
 .layer-toggle-row {
   display: flex;
   align-items: stretch;

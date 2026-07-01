@@ -6,15 +6,17 @@ export const ROLE_PERMISSIONS = {
   guest: ['map.read'],
   user: [
     'map.read', 'proposals.create', 'proposals.submit', 'proposals.delete.own',
-    'hazards.report', 'votes.cast', 'comments.write',
+    'hazards.report',     'accidents.report', 'votes.cast', 'comments.write',
   ],
   city_official: [
     'map.read', 'proposals.create', 'proposals.submit', 'proposals.review',
-    'proposals.delete.own', 'hazards.report', 'hazards.review', 'votes.cast', 'comments.write',
+    'proposals.delete.own', 'hazards.report', 'hazards.review',
+    'accidents.report', 'votes.cast', 'comments.write',
   ],
   admin: [
     'map.read', 'proposals.create', 'proposals.submit', 'proposals.review',
     'proposals.delete.own', 'proposals.delete.any', 'hazards.report', 'hazards.review',
+    'accidents.report',
     'votes.cast', 'comments.write', 'admin.ml', 'admin.import', 'admin.users',
   ],
 }

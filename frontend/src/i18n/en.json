@@ -87,6 +87,7 @@
       "3": "Fatal"
     },
     "date": "Date",
+    "dateTime": "Date & time",
     "road": "Road",
     "weather": "Weather",
     "lighting": "Lighting",
@@ -109,6 +110,7 @@
     "map":       "Map",
     "proposals": "Proposals",
     "hazards":   "Hazards",
+    "accidents": "Accidents",
     "admin":     "Admin"
   },
   "vote": {
@@ -178,7 +180,7 @@
     "descPlaceholder":"Describe the issue…",
     "submit":         "Submit Report",
     "submitted":      "Report submitted!",
-    "clickToReport":  "Click on the map to report a hazard",
+    "clickToReport":  "Double-click on the map to report a hazard",
     "statusLabel":    "Status",
     "statusUpdated":  "Status updated",
     "statuses": {
@@ -205,6 +207,65 @@
     },
     "empty":      "No hazard reports found.",
     "viewOnMap":  "View on map"
+  },
+  "accident": {
+    "title":           "Report an Accident",
+    "type":            "Type",
+    "severity":        "Severity",
+    "date":            "Accident date",
+    "dateTime":        "Date & time",
+    "street":          "Street",
+    "streetLoading":   "Detecting street…",
+    "streetPlaceholder": "Street name (optional)",
+    "description":     "Description",
+    "photo":           "Photo",
+    "descPlaceholder": "Describe what happened…",
+    "submit":          "Submit Report",
+    "submitted":       "Report submitted!",
+    "uploadingPhoto":  "Uploading photo…",
+    "statusLabel":     "Status",
+    "statusUpdated":   "Status updated",
+    "reported":        "Reported",
+    "statuses": {
+      "open":         "Open",
+      "acknowledged": "Acknowledged",
+      "resolved":     "Resolved"
+    },
+    "types": {
+      "collision":    "Collision with vehicle",
+      "fall":         "Fall",
+      "near_miss":    "Near miss",
+      "dooring":      "Dooring",
+      "hit_and_run":  "Hit and run",
+      "other":        "Other"
+    }
+  },
+  "accidents": {
+    "title":      "Accidents",
+    "filterBy":   "Show",
+    "source":     "Source",
+    "sources": {
+      "crowdsourced":   "User report",
+      "historical":     "Historical",
+      "lviv_open_data": "Open data",
+      "import":         "Import"
+    },
+    "filter": {
+      "active":   "Active",
+      "all":      "All",
+      "resolved": "Resolved"
+    },
+    "empty":      "No accidents found.",
+    "viewOnMap":  "View on map"
+  },
+  "report": {
+    "title":          "Report an Issue",
+    "mode":           "Report type",
+    "hazard":         "Hazard",
+    "accident":       "Accident",
+    "submit":         "Submit Report",
+    "uploadingPhoto": "Uploading photo…",
+    "doubleClick":    "Double-click on the map to report"
   },
   "ml": {
     "recommendation": {

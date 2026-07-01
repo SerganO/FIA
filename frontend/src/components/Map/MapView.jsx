@@ -6,8 +6,10 @@ import L from 'leaflet'
 import '@geoman-io/leaflet-geoman-free'
 import i18n from '../../i18n'
 import { proposalsBySource } from '../../lib/geojson'
+import { formatAccidentDateTime } from '../../lib/dates'
 import { TrafficLayer } from './TrafficLayer'
 import { HazardPopup } from '../Reports/HazardPopup'
+import { AccidentPopup } from '../Reports/AccidentPopup'
 
 // Fix Leaflet's default icon paths broken by Vite's asset bundling.
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
@@ -37,11 +39,47 @@ function accidentStyle(feature) {
   }
 }
 
+function isCrowdAccident(p) {
+  return p?.source === 'crowdsourced'
+}
+
+const crowdAccidentIcon = L.divIcon({
+  className: '',
+  html: '<div style="background:#ef4444;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)">A</div>',
+  iconSize:   [22, 22],
+  iconAnchor: [11, 11],
+  popupAnchor:[0, -12],
+})
+
+function accidentPointToLayer(feature, latlng) {
+  if (isCrowdAccident(feature.properties)) {
+    return L.marker(latlng, { icon: crowdAccidentIcon })
+  }
+  return L.circleMarker(latlng, accidentStyle(feature))
+}
+
 function accidentOnEach(feature, layer) {
   const p = feature.properties
+
+  if (isCrowdAccident(p)) {
+    const container = document.createElement('div')
+    let root = null
+    layer.bindPopup(container, { maxWidth: 280, minWidth: 240, className: 'custom-hazard-popup' })
+    layer.on('popupopen', () => {
+      root = createRoot(container)
+      root.render(<AccidentPopup properties={p} />)
+    })
+    layer.on('popupclose', () => {
+      root?.unmount()
+      root = null
+    })
+    return
+  }
+
   layer.bindPopup(`
     <strong>${t(`map.severity.${p.severity}`) ?? t('map.accident')}</strong><br/>
-    ${p.accident_date ? `${t('map.date')}: ${p.accident_date}<br/>` : ''}
+    ${p.accident_date ? `${t('map.dateTime')}: ${formatAccidentDateTime(p.accident_date, i18n.language)}<br/>` : ''}
+    ${p.street_name   ? `${t('accident.street')}: ${p.street_name}<br/>` : ''}
     ${p.road_type     ? `${t('map.road')}: ${p.road_type}<br/>` : ''}
     ${p.weather       ? `${t('map.weather')}: ${p.weather}<br/>` : ''}
     ${p.light_cond    ? `${t('map.lighting')}: ${p.light_cond}` : ''}
@@ -162,14 +200,14 @@ function hazardOnEach(feature, layer, onHazardUpdated) {
   })
 }
 
-// Fires onMapClick when the map canvas itself is clicked (not a marker/feature).
-// Skips when Geoman is in draw or edit mode so draw-point clicks don't open the hazard form.
-function MapClickHandler({ onMapClick }) {
+// Fires onMapDoubleClick when the map canvas itself is double-clicked (not a marker/feature).
+// Skips when Geoman is in draw or edit mode so draw clicks don't open the report form.
+function MapDoubleClickHandler({ onMapDoubleClick }) {
   const map = useMap()
   useMapEvents({
-    click(e) {
+    dblclick(e) {
       if (map.pm?.globalDrawModeEnabled() || map.pm?.globalEditModeEnabled()) return
-      onMapClick?.(e.latlng)
+      onMapDoubleClick?.(e.latlng)
     },
   })
   return null
@@ -272,7 +310,7 @@ export function MapView({
   hazardReports,
   layers,
   onProposalDrawn,
-  onMapClick,
+  onMapDoubleClick,
   canDraw,
   flyTo,
   onHazardUpdated,
@@ -350,6 +388,7 @@ export function MapView({
       zoom={13}
       style={{ height: '100%', width: '100%' }}
       zoomControl={true}
+      doubleClickZoom={false}
     >
       {/* CartoDB Voyager basemap — free, no key required */}
       <TileLayer
@@ -366,7 +405,7 @@ export function MapView({
         <GeoJSON
           key={`acc-${JSON.stringify(accidents).length}`}
           data={accidents}
-          pointToLayer={(f, ll) => L.circleMarker(ll, accidentStyle(f))}
+          pointToLayer={accidentPointToLayer}
           onEachFeature={accidentOnEach}
           ref={accRef}
         />
@@ -441,8 +480,8 @@ export function MapView({
       {/* Fly to user location on first load */}
       <LocateOnMount flyTo={flyTo} />
 
-      {/* Map click → hazard report form */}
-      <MapClickHandler onMapClick={onMapClick} />
+      {/* Map double-click → report form */}
+      <MapDoubleClickHandler onMapDoubleClick={onMapDoubleClick} />
 
       {/* Custom draw button (only visible for authorised roles) */}
       {canDraw && <DrawButtonControl onProposalDrawn={onProposalDrawn} />}

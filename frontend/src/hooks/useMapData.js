@@ -25,7 +25,6 @@ export function useMapData() {
 
     async function load() {
       try {
-        // ── Accidents ──────────────────────────────────────────────────────
         let accFC
         if (supabase) {
           const { data, error } = await supabase.rpc('get_accidents_geojson')
@@ -36,7 +35,6 @@ export function useMapData() {
         }
         if (!cancelled) setAccidents(accFC)
 
-        // ── Bike lanes ─────────────────────────────────────────────────────
         let blFC
         if (supabase) {
           const { data, error } = await supabase.rpc('get_bike_lanes_geojson')
@@ -47,25 +45,21 @@ export function useMapData() {
         }
         if (!cancelled) setBikeLanes(blFC)
 
-        // ── Bike parking ───────────────────────────────────────────────────
         if (supabase) {
           const { data } = await supabase.rpc('get_bike_parking_geojson')
           if (data && !cancelled) setBikeParking(data)
         }
 
-        // ── Bike rental ────────────────────────────────────────────────────
         if (supabase) {
           const { data } = await supabase.rpc('get_bike_rental_geojson')
           if (data && !cancelled) setBikeRental(data)
         }
 
-        // ── Proposals ──────────────────────────────────────────────────────
         if (supabase) {
           const { data, error } = await supabase.rpc('get_proposals_geojson')
           if (!error && !cancelled) setProposals(data)
         }
 
-        // ── Hazard reports ─────────────────────────────────────────────────
         if (supabase) {
           const { data } = await supabase.rpc('get_hazard_reports_geojson')
           if (data && !cancelled) setHazardReports(data)
@@ -73,7 +67,6 @@ export function useMapData() {
       } catch (err) {
         console.error('[useMapData]', err)
         if (!cancelled) setError(err.message)
-        // Graceful fallback: load from static files
         try {
           const [acc, bl] = await Promise.all([
             loadFallback(FALLBACK_ACCIDENTS),
